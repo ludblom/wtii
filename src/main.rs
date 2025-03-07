@@ -11,12 +11,12 @@ use ratatui::{
     text::Line,
     widgets::{
         Block, Borders, HighlightSpacing, List, ListItem, ListState, Paragraph,
-        StatefulWidget, Widget,
+        StatefulWidget, Widget, Padding, Wrap,
     },
     DefaultTerminal,
 };
 
-const TODO_HEADER_STYLE: Style = Style::new().fg(SLATE.c100).bg(BLUE.c800);
+const WTII_HEADER_STYLE: Style = Style::new().fg(SLATE.c100).bg(BLUE.c800);
 const NORMAL_ROW_BG: Color = SLATE.c950;
 const ALT_ROW_BG_COLOR: Color = SLATE.c900;
 const SELECTED_STYLE: Style = Style::new().bg(SLATE.c800).add_modifier(Modifier::BOLD);
@@ -32,32 +32,28 @@ fn main() -> Result<()> {
     app_result
 }
 
-/// This struct holds the current state of the app. In particular, it has the `todo_list` field
-/// which is a wrapper around `ListState`. Keeping track of the state lets us render the
-/// associated widget with its state and have access to features such as natural scrolling.
-///
-/// Check the event handling at the bottom to see how to change the state on incoming events. Check
-/// the drawing logic for items on how to specify the highlighting style for selected items.
 struct App {
     should_exit: bool,
-    todo_list: TodoList,
+    creature_list: CreatureList,
 }
 
-struct TodoList {
-    items: Vec<TodoItem>,
+struct CreatureList {
+    items: Vec<CreatureItem>,
     state: ListState,
 }
 
 #[derive(Debug)]
-struct TodoItem {
-    todo: String,
+struct CreatureItem {
+    name: String,
     status: Status,
+    initiative: i8,
+    hp: i8,
+    ac: i8,
+    description: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 enum Status {
-    Todo,
-    Completed,
     Alive,
     Dead,
 }
@@ -66,32 +62,35 @@ impl Default for App {
     fn default() -> Self {
         Self {
             should_exit: false,
-            todo_list: TodoList::from_iter([
-                (Status::Todo, "Rewrite everything with Rust!"),
-                (Status::Completed, "Rewrite all of your tui apps with Ratatui"),
-                (Status::Alive, "Samson"),
-                (Status::Dead, "Red Proto Drake"),
+            creature_list: CreatureList::from_iter([
+                // Status, Name, Initiative, HP, AC, Description
+                (Status::Alive, "Samson", 1, 127, 3, ""),
+                (Status::Alive, "Red Proto Drake", 4, 5, 6, "A big ass dragon"),
             ]),
         }
     }
 }
 
-impl FromIterator<(Status, &'static str)> for TodoList {
-    fn from_iter<I: IntoIterator<Item = (Status, &'static str)>>(iter: I) -> Self {
+impl FromIterator<(Status, &'static str, i8, i8, i8, &'static str)> for CreatureList {
+    fn from_iter<I: IntoIterator<Item = (Status, &'static str, i8, i8, i8, &'static str)>>(iter: I) -> Self {
         let items = iter
             .into_iter()
-            .map(|(status, todo)| TodoItem::new(status, todo))
+            .map(|(status, name, initiative, hp, ac, description)| CreatureItem::new(status, name, initiative, hp, ac, description))
             .collect();
         let state = ListState::default();
         Self { items, state }
     }
 }
 
-impl TodoItem {
-    fn new(status: Status, todo: &str) -> Self {
+impl CreatureItem {
+    fn new(status: Status, name: &str, initiative: i8, hp: i8, ac: i8, description: &str) -> Self {
         Self {
             status,
-            todo: todo.to_string(),
+            name: name.to_string(),
+            initiative,
+            hp,
+            ac,
+            description: description.to_string(),
         }
     }
 }
@@ -113,45 +112,45 @@ impl App {
         }
         match key.code {
             KeyCode::Char('q') | KeyCode::Esc => self.should_exit = true,
-            KeyCode::Char('h') | KeyCode::Left => self.select_none(),
+            KeyCode::Char('u') => self.select_none(),
             KeyCode::Char('j') | KeyCode::Down => self.select_next(),
             KeyCode::Char('k') | KeyCode::Up => self.select_previous(),
-            KeyCode::Char('g') | KeyCode::Home => self.select_first(),
-            KeyCode::Char('G') | KeyCode::End => self.select_last(),
-            KeyCode::Char('l') | KeyCode::Right | KeyCode::Enter => {
-                self.toggle_status();
-            }
+            KeyCode::Char('h') | KeyCode::Left => self.lower_health(),
+            KeyCode::Char('l') | KeyCode::Right => self.increase_health(),
             _ => {}
         }
     }
 
     fn select_none(&mut self) {
-        self.todo_list.state.select(None);
+        self.creature_list.state.select(None);
     }
 
     fn select_next(&mut self) {
-        self.todo_list.state.select_next();
+        self.creature_list.state.select_next();
     }
+
     fn select_previous(&mut self) {
-        self.todo_list.state.select_previous();
+        self.creature_list.state.select_previous();
     }
 
-    fn select_first(&mut self) {
-        self.todo_list.state.select_first();
+    fn lower_health(&mut self) {
+        if let Some(i) = self.creature_list.state.selected() {
+            if self.creature_list.items[i].hp > i8::MIN {
+                self.creature_list.items[i].hp -= 1;
+            }
+            if self.creature_list.items[i].hp <= 0 {
+                self.creature_list.items[i].status = Status::Dead;
+            }
+        }
     }
 
-    fn select_last(&mut self) {
-        self.todo_list.state.select_last();
-    }
-
-    /// Changes the status of the selected list item
-    fn toggle_status(&mut self) {
-        if let Some(i) = self.todo_list.state.selected() {
-            self.todo_list.items[i].status = match self.todo_list.items[i].status {
-                Status::Completed => Status::Todo,
-                Status::Todo => Status::Completed,
-                Status::Alive => Status::Alive,
-                Status::Dead => Status::Dead,
+    fn increase_health(&mut self) {
+        if let Some(i) = self.creature_list.state.selected() {
+            if self.creature_list.items[i].hp < i8::MAX {
+                self.creature_list.items[i].hp += 1;
+            }
+            if self.creature_list.items[i].hp > 0 {
+                self.creature_list.items[i].status = Status::Alive;
             }
         }
     }
@@ -166,12 +165,13 @@ impl Widget for &mut App {
         ])
         .areas(area);
 
-        let [list_area] =
-            Layout::vertical([Constraint::Fill(1)]).areas(main_area);
+        let [list_area, item_area] =
+            Layout::vertical([Constraint::Fill(1), Constraint::Fill(1)]).areas(main_area);
 
         App::render_header(header_area, buf);
         App::render_footer(footer_area, buf);
         self.render_list(list_area, buf);
+        self.render_selected_item(item_area, buf);
     }
 }
 
@@ -195,12 +195,12 @@ impl App {
             .title(Line::raw("Order").centered())
             .borders(Borders::TOP)
             .border_set(symbols::border::EMPTY)
-            .border_style(TODO_HEADER_STYLE)
+            .border_style(WTII_HEADER_STYLE)
             .bg(NORMAL_ROW_BG);
 
         // Iterate through all elements in the `items` and stylize them.
         let items: Vec<ListItem> = self
-            .todo_list
+            .creature_list
             .items
             .iter()
             .enumerate()
@@ -219,7 +219,40 @@ impl App {
 
         // We need to disambiguate this trait method as both `Widget` and `StatefulWidget` share the
         // same method name `render`.
-        StatefulWidget::render(list, area, buf, &mut self.todo_list.state);
+        StatefulWidget::render(list, area, buf, &mut self.creature_list.state);
+    }
+
+    fn render_selected_item(&self, area: Rect, buf: &mut Buffer) {
+        // We get the info depending on the item's state.
+        let info = if let Some(i) = self.creature_list.state.selected() {
+            match self.creature_list.items[i].status {
+                _ => format!(" Initiative: {}\n Name: {}\n HP: {}\n AC: {}\n Description: {}",
+                                         self.creature_list.items[i].initiative,
+                                         self.creature_list.items[i].name,
+                                         self.creature_list.items[i].hp,
+                                         self.creature_list.items[i].ac,
+                                         self.creature_list.items[i].description,
+                ),
+            }
+        } else {
+            "Nothing selected...".to_string()
+        };
+
+        // We show the list item's info under the list in this paragraph
+        let block = Block::new()
+            .title(Line::raw("Creature Info").centered())
+            .borders(Borders::TOP)
+            .border_set(symbols::border::EMPTY)
+            .border_style(WTII_HEADER_STYLE)
+            .bg(NORMAL_ROW_BG)
+            .padding(Padding::horizontal(1));
+
+        // We can now render the item info
+        Paragraph::new(info)
+            .block(block)
+            .fg(TEXT_FG_COLOR)
+            .wrap(Wrap { trim: false })
+            .render(area, buf);
     }
 }
 
@@ -231,18 +264,14 @@ const fn alternate_colors(i: usize) -> Color {
     }
 }
 
-impl From<&TodoItem> for ListItem<'_> {
-    fn from(value: &TodoItem) -> Self {
+impl From<&CreatureItem> for ListItem<'_> {
+    fn from(value: &CreatureItem) -> Self {
         let line = match value.status {
-            Status::Todo => Line::styled(format!(" ☐ {}", value.todo), TEXT_FG_COLOR),
-            Status::Completed => {
-                Line::styled(format!(" ✓ {}", value.todo), COMPLETED_TEXT_FG_COLOR)
-            },
             Status::Alive => {
-                Line::styled(format!(" {}", value.todo), COMPLETED_TEXT_FG_COLOR)
+                Line::styled(format!(" ✓ {}", value.name), COMPLETED_TEXT_FG_COLOR)
             },
             Status::Dead => {
-                Line::styled(format!(" X {}", value.todo), DEAD_TEXT_FG_COLOR)
+                Line::styled(format!(" X {}", value.name), DEAD_TEXT_FG_COLOR)
             }
         };
         ListItem::new(line)
