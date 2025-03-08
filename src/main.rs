@@ -1,5 +1,6 @@
 use color_eyre::Result;
 
+mod creature;
 mod ui;
 
 fn main() -> Result<()> {

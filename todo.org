@@ -1,4 +1,6 @@
 #+title: Todo
 
-* Things to add [0/1]
+* Things to add [0/2]
 ** [ ] Player config
+** [ ] Implement API search
+`curl "https://api.open5e.com/v1/monsters/?search=beholder"`

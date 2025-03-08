@@ -1,17 +1,18 @@
+use crate::creature::{CreatureItem, CreatureList, Status};
 use color_eyre::Result;
 use ratatui::{
     buffer::Buffer,
     crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
     layout::{Constraint, Layout, Rect},
     style::{
-        palette::tailwind::{BLUE, GREEN, RED, SLATE},
+        palette::tailwind::{BLUE, SLATE},
         Color, Modifier, Style, Stylize,
     },
     symbols,
     text::Line,
     widgets::{
-        Block, Borders, HighlightSpacing, List, ListItem, ListState, Padding, Paragraph,
-        StatefulWidget, Widget, Wrap,
+        Block, Borders, HighlightSpacing, List, ListItem, Padding, Paragraph, StatefulWidget,
+        Widget, Wrap,
     },
     DefaultTerminal,
 };
@@ -21,33 +22,10 @@ const NORMAL_ROW_BG: Color = SLATE.c950;
 const ALT_ROW_BG_COLOR: Color = SLATE.c900;
 const SELECTED_STYLE: Style = Style::new().bg(SLATE.c800).add_modifier(Modifier::BOLD);
 const TEXT_FG_COLOR: Color = SLATE.c200;
-const COMPLETED_TEXT_FG_COLOR: Color = GREEN.c500;
-const DEAD_TEXT_FG_COLOR: Color = RED.c500;
 
 pub struct App {
     should_exit: bool,
     creature_list: CreatureList,
-}
-
-struct CreatureList {
-    items: Vec<CreatureItem>,
-    state: ListState,
-}
-
-#[derive(Debug)]
-struct CreatureItem {
-    name: String,
-    status: Status,
-    initiative: i64,
-    hp: i64,
-    ac: i64,
-    description: String,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-enum Status {
-    Alive,
-    Dead,
 }
 
 impl Default for App {
@@ -56,57 +34,9 @@ impl Default for App {
             should_exit: false,
             creature_list: CreatureList::from_iter([
                 // Status, Name, Initiative, HP, AC, Description
-                (Status::Alive, "Samson", 1, 2, 3, ""),
-                (
-                    Status::Alive,
-                    "Red Proto Drake",
-                    4,
-                    5,
-                    6,
-                    "A big ass dragon",
-                ),
+                (Status::Alive, "Samson", None),
+                (Status::Alive, "Red Proto Drake", Some("A big ass dragon")),
             ]),
-        }
-    }
-}
-
-impl FromIterator<(Status, &'static str, i64, i64, i64, &'static str)> for CreatureList {
-    fn from_iter<I: IntoIterator<Item = (Status, &'static str, i64, i64, i64, &'static str)>>(
-        iter: I,
-    ) -> Self {
-        let items = iter
-            .into_iter()
-            .map(|(status, name, initiative, hp, ac, description)| {
-                CreatureItem::new(status, name, initiative, hp, ac, description)
-            })
-            .collect();
-        let state = ListState::default();
-        Self { items, state }
-    }
-}
-
-impl CreatureItem {
-    fn new(
-        status: Status,
-        name: &str,
-        initiative: i64,
-        hp: i64,
-        ac: i64,
-        description: &str,
-    ) -> Self {
-        let new_initiative: i64;
-        if initiative < 0 {
-            new_initiative = rand::random_range(1..21);
-        } else {
-            new_initiative = initiative;
-        }
-        Self {
-            status,
-            name: name.to_string(),
-            initiative: new_initiative,
-            hp,
-            ac,
-            description: description.to_string(),
         }
     }
 }
@@ -152,28 +82,38 @@ impl App {
 
     fn lower_health(&mut self) {
         if let Some(i) = self.creature_list.state.selected() {
-            if self.creature_list.items[i].hp > i64::MIN {
-                self.creature_list.items[i].hp -= 1;
-            }
-            if self.creature_list.items[i].hp <= 0 {
-                self.creature_list.items[i].status = Status::Dead;
+            match self.creature_list.items[i].hit_points {
+                Some(mut hp) => {
+                    if hp > i64::MIN {
+                        hp -= 1;
+                    }
+                    if hp <= 0 {
+                        self.creature_list.items[i].status = Status::Dead;
+                    }
+                }
+                _ => (),
             }
         }
     }
 
     fn increase_health(&mut self) {
         if let Some(i) = self.creature_list.state.selected() {
-            if self.creature_list.items[i].hp < i64::MAX {
-                self.creature_list.items[i].hp += 1;
-            }
-            if self.creature_list.items[i].hp > 0 {
-                self.creature_list.items[i].status = Status::Alive;
+            match self.creature_list.items[i].hit_points {
+                Some(mut hp) => {
+                    if hp < i64::MAX {
+                        hp += 1;
+                    }
+                    if hp > 0 {
+                        self.creature_list.items[i].status = Status::Alive;
+                    }
+                }
+                _ => (),
             }
         }
     }
 
     fn insert_new(&mut self) {
-        let creature = CreatureItem::new(Status::Alive, "Borbur", -1, 30, 18, "A big ass dude");
+        let creature = CreatureItem::new(Status::Alive, "Borbur", Some("Big ass dude!"));
         self.creature_list.items.push(creature);
     }
 }
@@ -220,48 +160,49 @@ impl App {
             .border_style(WTII_HEADER_STYLE)
             .bg(NORMAL_ROW_BG);
 
-        // Iterate through all elements in the `items` and stylize them.
         let items: Vec<ListItem> = self
             .creature_list
             .items
             .iter()
             .enumerate()
-            .map(|(i, todo_item)| {
+            .map(|(i, creature)| {
                 let color = alternate_colors(i);
-                ListItem::from(todo_item).bg(color)
+                ListItem::from(creature).bg(color)
             })
             .collect();
 
-        // Create a List from all list items and highlight the currently selected one
         let list = List::new(items)
             .block(block)
             .highlight_style(SELECTED_STYLE)
             .highlight_symbol(">")
             .highlight_spacing(HighlightSpacing::Always);
 
-        // We need to disambiguate this trait method as both `Widget` and `StatefulWidget` share the
-        // same method name `render`.
         StatefulWidget::render(list, area, buf, &mut self.creature_list.state);
     }
 
     fn render_selected_item(&self, area: Rect, buf: &mut Buffer) {
-        // We get the info depending on the item's state.
         let info = if let Some(i) = self.creature_list.state.selected() {
             match self.creature_list.items[i].status {
                 _ => format!(
                     " Initiative: {}\n Name: {}\n HP: {}\n AC: {}\n Description: {}",
-                    self.creature_list.items[i].initiative,
+                    if self.creature_list.items[i].initiative.is_some() {
+                        self.creature_list.items[i].initiative.unwrap().to_string()
+                    } else {
+                        "Not set yet".to_string()
+                    },
                     self.creature_list.items[i].name,
-                    self.creature_list.items[i].hp,
-                    self.creature_list.items[i].ac,
-                    self.creature_list.items[i].description,
+                    self.creature_list.items[i].hit_points.unwrap_or(i64::MIN), // Do not display thease for Players
+                    self.creature_list.items[i].armor_class.unwrap_or(i64::MIN), // Do not display thease for Players
+                    match &self.creature_list.items[i].desc {
+                        Some(desc) => desc.to_string(),
+                        None => "".to_string(),
+                    },
                 ),
             }
         } else {
             "Nothing selected...".to_string()
         };
 
-        // We show the list item's info under the list in this paragraph
         let block = Block::new()
             .title(Line::raw("Creature Info").centered())
             .borders(Borders::TOP)
@@ -270,7 +211,6 @@ impl App {
             .bg(NORMAL_ROW_BG)
             .padding(Padding::horizontal(1));
 
-        // We can now render the item info
         Paragraph::new(info)
             .block(block)
             .fg(TEXT_FG_COLOR)
@@ -284,15 +224,5 @@ const fn alternate_colors(i: usize) -> Color {
         NORMAL_ROW_BG
     } else {
         ALT_ROW_BG_COLOR
-    }
-}
-
-impl From<&CreatureItem> for ListItem<'_> {
-    fn from(value: &CreatureItem) -> Self {
-        let line = match value.status {
-            Status::Alive => Line::styled(format!(" ✓ {}", value.name), COMPLETED_TEXT_FG_COLOR),
-            Status::Dead => Line::styled(format!(" X {}", value.name), DEAD_TEXT_FG_COLOR),
-        };
-        ListItem::new(line)
     }
 }
