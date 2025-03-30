@@ -4,6 +4,7 @@ use ratatui::{
     text::Line,
     widgets::{ListItem, ListState},
 };
+use serde::Deserialize;
 
 const COMPLETED_TEXT_FG_COLOR: Color = GREEN.c500;
 const DEAD_TEXT_FG_COLOR: Color = RED.c500;
@@ -13,7 +14,7 @@ pub struct CreatureList {
     pub state: ListState,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct CreatureItem {
     pub name: String,
     pub status: Status,
@@ -54,19 +55,19 @@ pub struct CreatureItem {
     pub reactions: Option<Vec<Attack>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct Attack {
     pub name: String,
     pub desc: String,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize)]
 pub enum Status {
     Alive,
     Dead,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize)]
 pub enum Faction {
     Player,
     Npc,
