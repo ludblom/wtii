@@ -14,7 +14,7 @@ pub struct CreatureList {
     pub state: ListState,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Default)]
 pub struct CreatureItem {
     pub name: String,
     pub status: Status,
@@ -39,11 +39,11 @@ pub struct CreatureItem {
     pub dexterity_save: Option<i64>,
     pub constitution_save: Option<i64>,
     pub intelligence_save: Option<i64>,
-    pub wisdom_sav: Option<i64>,
+    pub wisdom_save: Option<i64>,
     pub charisma_save: Option<i64>,
     pub perception: Option<String>,
     // pub skills: Option<String>,
-    pub damage_vulnerabilities: Option<Vec<String>>,
+    pub damage_vulnerabilities: Option<String>,
     pub damage_resistances: Option<Vec<String>>,
     pub damage_immunities: Option<Vec<String>>,
     pub condition_immunities: Option<Vec<String>>,
@@ -61,15 +61,17 @@ pub struct Attack {
     pub desc: String,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Default)]
 pub enum Status {
+    #[default]
     Alive,
     Dead,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Default)]
 pub enum Faction {
     Player,
+    #[default]
     Npc,
 }
 
@@ -102,7 +104,7 @@ impl CreatureItem {
             dexterity_save: None,
             constitution_save: None,
             intelligence_save: None,
-            wisdom_sav: None,
+            wisdom_save: None,
             charisma_save: None,
             perception: None,
             damage_vulnerabilities: None,
