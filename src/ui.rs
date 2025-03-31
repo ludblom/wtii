@@ -34,7 +34,7 @@ impl Default for App {
         Self {
             should_exit: false,
             creature_list: CreatureList::from_iter([
-                // Status, Name, Description, HP, Faction
+                // Status, Name, Description, HP, Faction, Armor Class
                 (
                     Status::Alive,
                     "Samson",
@@ -97,32 +97,26 @@ impl App {
 
     fn lower_health(&mut self) {
         if let Some(i) = self.creature_list.state.selected() {
-            match self.creature_list.items[i].hit_points {
-                Some(mut hp) => {
-                    if hp > i64::MIN {
-                        hp -= 1;
-                    }
-                    if hp <= 0 {
-                        self.creature_list.items[i].status = Status::Dead;
-                    }
+            if let Some(hp) = self.creature_list.items[i].hit_points.as_mut() {
+                if *hp > i64::MIN {
+                    *hp -= 1;
                 }
-                _ => (),
+                if *hp <= 0 {
+                    self.creature_list.items[i].status = Status::Dead;
+                }
             }
         }
     }
 
     fn increase_health(&mut self) {
         if let Some(i) = self.creature_list.state.selected() {
-            match self.creature_list.items[i].hit_points {
-                Some(mut hp) => {
-                    if hp < i64::MAX {
-                        hp += 1;
-                    }
-                    if hp > 0 {
-                        self.creature_list.items[i].status = Status::Alive;
-                    }
+            if let Some(hp) = self.creature_list.items[i].hit_points.as_mut() {
+                if *hp < i64::MAX {
+                    *hp += 1;
                 }
-                _ => (),
+                if *hp > 0 {
+                    self.creature_list.items[i].status = Status::Alive;
+                }
             }
         }
     }
