@@ -1,3 +1,4 @@
+use crate::creature::Faction;
 use crate::creature::{CreatureItem, CreatureList, Status};
 use color_eyre::Result;
 use ratatui::{
@@ -33,9 +34,23 @@ impl Default for App {
         Self {
             should_exit: false,
             creature_list: CreatureList::from_iter([
-                // Status, Name, Initiative, HP, AC, Description
-                (Status::Alive, "Samson", None),
-                (Status::Alive, "Red Proto Drake", Some("A big ass dragon")),
+                // Status, Name, Description, HP, Faction
+                (
+                    Status::Alive,
+                    "Samson",
+                    None,
+                    Some(100),
+                    Faction::Player,
+                    None,
+                ),
+                (
+                    Status::Alive,
+                    "Red Proto Drake",
+                    Some("A big ass dragon"),
+                    Some(10),
+                    Faction::Npc,
+                    Some(30),
+                ),
             ]),
         }
     }
@@ -113,7 +128,14 @@ impl App {
     }
 
     fn insert_new(&mut self) {
-        let creature = CreatureItem::new(Status::Alive, "Borbur", Some("Big ass dude!"));
+        let creature = CreatureItem::new(
+            Status::Alive,
+            "Borbur",
+            Some("Big ass dude!"),
+            Some(33),
+            Faction::Npc,
+            Some(15),
+        );
         self.creature_list.items.push(creature);
     }
 }
@@ -182,8 +204,8 @@ impl App {
 
     fn render_selected_item(&self, area: Rect, buf: &mut Buffer) {
         let info = if let Some(i) = self.creature_list.state.selected() {
-            match self.creature_list.items[i].status {
-                _ => format!(
+            match self.creature_list.items[i].faction {
+                Faction::Npc => format!(
                     " Initiative: {}\n Name: {}\n HP: {}\n AC: {}\n Description: {}",
                     if self.creature_list.items[i].initiative.is_some() {
                         self.creature_list.items[i].initiative.unwrap().to_string()
@@ -191,8 +213,25 @@ impl App {
                         "Not set yet".to_string()
                     },
                     self.creature_list.items[i].name,
-                    self.creature_list.items[i].hit_points.unwrap_or(i64::MIN), // Do not display thease for Players
-                    self.creature_list.items[i].armor_class.unwrap_or(i64::MIN), // Do not display thease for Players
+                    self.creature_list.items[i].hit_points.unwrap(),
+                    self.creature_list.items[i].armor_class.unwrap(),
+                    match &self.creature_list.items[i].desc {
+                        Some(desc) => desc.to_string(),
+                        None => "".to_string(),
+                    },
+                ),
+                Faction::Player => format!(
+                    " Initiative: {}\n Name: {}\n HP: {}\n Description: {}",
+                    if self.creature_list.items[i].initiative.is_some() {
+                        self.creature_list.items[i].initiative.unwrap().to_string()
+                    } else {
+                        "Not set yet".to_string()
+                    },
+                    self.creature_list.items[i].name,
+                    match &self.creature_list.items[i].hit_points {
+                        Some(hit_points) => hit_points.to_string(),
+                        None => "".to_string(),
+                    },
                     match &self.creature_list.items[i].desc {
                         Some(desc) => desc.to_string(),
                         None => "".to_string(),

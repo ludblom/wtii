@@ -76,15 +76,26 @@ pub enum Faction {
 }
 
 impl CreatureItem {
-    pub fn new(status: Status, name: &str, desc: Option<&str>) -> Self {
+    pub fn new(
+        status: Status,
+        name: &str,
+        desc: Option<&str>,
+        hit_points: Option<i64>,
+        faction: Faction,
+        armor_class: Option<i64>,
+    ) -> Self {
         Self {
             status,
-            faction: Faction::Player,
+            faction,
             name: name.to_string(),
             initiative: None,
-            hit_points: None,
+            hit_points: if faction == Faction::Npc {
+                hit_points
+            } else {
+                Some(1)
+            },
             hit_dice: None,
-            armor_class: None,
+            armor_class,
             armor_desc: None,
             desc: if desc.is_none() {
                 None
@@ -129,13 +140,35 @@ impl From<&CreatureItem> for ListItem<'_> {
     }
 }
 
-impl FromIterator<(Status, &'static str, Option<&'static str>)> for CreatureList {
-    fn from_iter<I: IntoIterator<Item = (Status, &'static str, Option<&'static str>)>>(
+impl
+    FromIterator<(
+        Status,
+        &'static str,
+        Option<&'static str>,
+        Option<i64>,
+        Faction,
+        Option<i64>,
+    )> for CreatureList
+{
+    fn from_iter<
+        I: IntoIterator<
+            Item = (
+                Status,
+                &'static str,
+                Option<&'static str>,
+                Option<i64>,
+                Faction,
+                Option<i64>,
+            ),
+        >,
+    >(
         iter: I,
     ) -> Self {
         let items = iter
             .into_iter()
-            .map(|(status, name, desc)| CreatureItem::new(status, name, desc))
+            .map(|(status, name, desc, hit_points, faction, armor_class)| {
+                CreatureItem::new(status, name, desc, hit_points, faction, armor_class)
+            })
             .collect();
         let state = ListState::default();
         Self { items, state }
