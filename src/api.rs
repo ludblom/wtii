@@ -68,7 +68,7 @@ fn parse_json_response(json_resp: &JsonValue) -> Option<Vec<CreatureItem>> {
             let initiative: Option<i64> = Some(random_range(1..21) + initiative_modifier);
             creature.initiative = initiative;
 
-            let hit_points: Option<i64> = value["hit_points"].as_i64().or(None);
+            let hit_points: Option<u64> = value["hit_points"].as_u64().or(None);
             creature.hit_points = hit_points;
 
             let hit_dice: Option<String> = match &value["hit_dice"] {

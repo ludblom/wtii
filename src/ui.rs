@@ -98,10 +98,10 @@ impl App {
     fn lower_health(&mut self) {
         if let Some(i) = self.creature_list.state.selected() {
             if let Some(hp) = self.creature_list.items[i].hit_points.as_mut() {
-                if *hp > i64::MIN {
+                if *hp > 0 {
                     *hp -= 1;
                 }
-                if *hp <= 0 {
+                if *hp == 0 {
                     self.creature_list.items[i].status = Status::Dead;
                 }
             }
@@ -111,7 +111,7 @@ impl App {
     fn increase_health(&mut self) {
         if let Some(i) = self.creature_list.state.selected() {
             if let Some(hp) = self.creature_list.items[i].hit_points.as_mut() {
-                if *hp < i64::MAX {
+                if *hp < u64::MAX {
                     *hp += 1;
                 }
                 if *hp > 0 {
