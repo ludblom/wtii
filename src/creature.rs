@@ -1,3 +1,4 @@
+use rand::random_range;
 use ratatui::prelude::Color;
 use ratatui::style::palette::tailwind::{GREEN, RED, YELLOW};
 use ratatui::{
@@ -77,24 +78,64 @@ pub enum Faction {
 }
 
 impl CreatureItem {
-    pub fn new(
-        status: Status,
+    pub fn new_player(name: &str, desc: Option<&str>) -> Self {
+        Self {
+            status: Status::Alive,
+            faction: Faction::Player,
+            name: name.to_string(),
+            initiative: None,
+            hit_points: Some(1),
+            hit_dice: None,
+            armor_class: None,
+            armor_desc: None,
+            desc: if desc.is_none() {
+                None
+            } else {
+                Some(desc.unwrap().to_string())
+            },
+            size: None,
+            creature_type: None,
+            sub_creature_type: None,
+            strength: None,
+            dexterity: None,
+            constitution: None,
+            intelligence: None,
+            wisdom: None,
+            charisma: None,
+            strength_save: None,
+            dexterity_save: None,
+            constitution_save: None,
+            intelligence_save: None,
+            wisdom_save: None,
+            charisma_save: None,
+            perception: None,
+            damage_vulnerabilities: None,
+            damage_resistances: None,
+            damage_immunities: None,
+            condition_immunities: None,
+            languages: None,
+            actions: None,
+            legendary_actions: None,
+            reactions: None,
+        }
+    }
+
+    pub fn new_npc(
         name: &str,
         desc: Option<&str>,
+        dexterity: i64,
         hit_points: Option<u64>,
-        faction: Faction,
         armor_class: Option<i64>,
     ) -> Self {
         Self {
-            status,
-            faction,
+            status: Status::Alive,
+            faction: Faction::Npc,
             name: name.to_string(),
-            initiative: None,
-            hit_points: if faction == Faction::Npc {
-                hit_points
-            } else {
-                Some(1)
+            initiative: {
+                let initiative_modifier: i64 = (dexterity - 10) / 2;
+                Some(random_range(1..21) + initiative_modifier)
             },
+            hit_points,
             hit_dice: None,
             armor_class,
             armor_desc: None,
@@ -107,7 +148,7 @@ impl CreatureItem {
             creature_type: None,
             sub_creature_type: None,
             strength: None,
-            dexterity: None,
+            dexterity: Some(dexterity),
             constitution: None,
             intelligence: None,
             wisdom: None,
@@ -157,35 +198,11 @@ impl From<&CreatureItem> for ListItem<'_> {
     }
 }
 
-impl
-    FromIterator<(
-        Status,
-        &'static str,
-        Option<&'static str>,
-        Option<u64>,
-        Faction,
-        Option<i64>,
-    )> for CreatureList
-{
-    fn from_iter<
-        I: IntoIterator<
-            Item = (
-                Status,
-                &'static str,
-                Option<&'static str>,
-                Option<u64>,
-                Faction,
-                Option<i64>,
-            ),
-        >,
-    >(
-        iter: I,
-    ) -> Self {
+impl FromIterator<(&'static str, Option<&'static str>)> for CreatureList {
+    fn from_iter<I: IntoIterator<Item = (&'static str, Option<&'static str>)>>(iter: I) -> Self {
         let items = iter
             .into_iter()
-            .map(|(status, name, desc, hit_points, faction, armor_class)| {
-                CreatureItem::new(status, name, desc, hit_points, faction, armor_class)
-            })
+            .map(|(name, desc)| CreatureItem::new_player(name, desc))
             .collect();
         let state = ListState::default();
         Self { items, state }

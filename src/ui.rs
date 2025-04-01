@@ -26,6 +26,7 @@ const TEXT_FG_COLOR: Color = SLATE.c200;
 
 pub struct App {
     should_exit: bool,
+    show_creature_search_popup: bool,
     creature_list: CreatureList,
 }
 
@@ -33,24 +34,11 @@ impl Default for App {
     fn default() -> Self {
         Self {
             should_exit: false,
+            show_creature_search_popup: false,
             creature_list: CreatureList::from_iter([
                 // Status, Name, Description, HP, Faction, Armor Class
-                (
-                    Status::Alive,
-                    "Samson",
-                    None,
-                    Some(100),
-                    Faction::Player,
-                    None,
-                ),
-                (
-                    Status::Alive,
-                    "Red Proto Drake",
-                    Some("A big ass dragon"),
-                    Some(10),
-                    Faction::Npc,
-                    Some(30),
-                ),
+                ("Samson", None),
+                ("Red Proto Drake", Some("A big ass dragon")),
             ]),
         }
     }
@@ -122,14 +110,8 @@ impl App {
     }
 
     fn insert_new(&mut self) {
-        let creature = CreatureItem::new(
-            Status::Alive,
-            "Borbur",
-            Some("Big ass dude!"),
-            Some(33),
-            Faction::Npc,
-            Some(15),
-        );
+        let creature =
+            CreatureItem::new_npc("Borbur", Some("Big ass dude!"), 11, Some(44), Some(18));
         self.creature_list.add_new_creature(creature);
     }
 }
