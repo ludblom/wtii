@@ -1,10 +1,11 @@
 use crate::creature::Faction;
 use crate::creature::{CreatureItem, CreatureList, Status};
+use color_eyre::owo_colors::OwoColorize;
 use color_eyre::Result;
 use ratatui::{
     buffer::Buffer,
     crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
-    layout::{Constraint, Layout, Rect},
+    layout::{Constraint, Flex, Layout, Rect},
     style::{
         palette::tailwind::{BLUE, SLATE},
         Color, Modifier, Style, Stylize,
@@ -12,8 +13,8 @@ use ratatui::{
     symbols,
     text::Line,
     widgets::{
-        Block, Borders, HighlightSpacing, List, ListItem, Padding, Paragraph, StatefulWidget,
-        Widget, Wrap,
+        Block, Borders, Clear, HighlightSpacing, List, ListItem, Padding, Paragraph,
+        StatefulWidget, Widget, Wrap,
     },
     DefaultTerminal,
 };
@@ -60,13 +61,19 @@ impl App {
             return;
         }
         match key.code {
-            KeyCode::Char('q') | KeyCode::Esc => self.should_exit = true,
+            KeyCode::Char('q') | KeyCode::Esc => {
+                if self.show_creature_search_popup {
+                    self.show_creature_search_popup = false;
+                } else {
+                    self.should_exit = true
+                }
+            }
             KeyCode::Char('u') => self.select_none(),
             KeyCode::Char('j') | KeyCode::Down => self.select_next(),
             KeyCode::Char('k') | KeyCode::Up => self.select_previous(),
             KeyCode::Char('h') | KeyCode::Left => self.lower_health(),
             KeyCode::Char('l') | KeyCode::Right => self.increase_health(),
-            KeyCode::Char('i') => self.insert_new(),
+            KeyCode::Char('i') => self.show_creature_search_popup = true,
             _ => {}
         }
     }
@@ -130,13 +137,40 @@ impl Widget for &mut App {
 
         App::render_header(header_area, buf);
         App::render_footer(footer_area, buf);
+
         self.render_list(list_area, buf);
         self.render_selected_item(item_area, buf);
+
+        if self.show_creature_search_popup {
+            let area = App::popup_area(main_area);
+            App::clear_area(area, buf);
+            App::render_creature_search_popup(area, buf);
+        }
     }
 }
 
 /// Rendering logic for the app
 impl App {
+    fn clear_area(area: Rect, buf: &mut Buffer) {
+        Clear.render(area, buf);
+    }
+    fn render_creature_search_popup(area: Rect, buf: &mut Buffer) {
+        Self::popup_area(area);
+        Block::bordered()
+            .title("Creature Search")
+            .borders(Borders::ALL)
+            .bg(NORMAL_ROW_BG)
+            .render(area, buf);
+    }
+
+    fn popup_area(area: Rect) -> Rect {
+        let vertical = Layout::vertical([Constraint::Percentage(90)]).flex(Flex::Center);
+        let horizontal = Layout::horizontal([Constraint::Percentage(90)]).flex(Flex::Center);
+        let [area] = vertical.areas(area);
+        let [area] = horizontal.areas(area);
+        area
+    }
+
     fn render_header(area: Rect, buf: &mut Buffer) {
         Paragraph::new("Who's Turn Is It?")
             .bold()
