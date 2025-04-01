@@ -130,7 +130,7 @@ impl App {
             Faction::Npc,
             Some(15),
         );
-        self.creature_list.items.push(creature);
+        self.creature_list.add_new_creature(creature);
     }
 }
 

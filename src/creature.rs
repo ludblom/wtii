@@ -1,5 +1,5 @@
 use ratatui::prelude::Color;
-use ratatui::style::palette::tailwind::{GREEN, RED};
+use ratatui::style::palette::tailwind::{GREEN, RED, YELLOW};
 use ratatui::{
     text::Line,
     widgets::{ListItem, ListState},
@@ -8,6 +8,7 @@ use serde::Deserialize;
 
 const COMPLETED_TEXT_FG_COLOR: Color = GREEN.c500;
 const DEAD_TEXT_FG_COLOR: Color = RED.c500;
+const NO_INITIATIVE_STYLE: Color = YELLOW.c300;
 
 pub struct CreatureList {
     pub items: Vec<CreatureItem>,
@@ -130,10 +131,26 @@ impl CreatureItem {
     }
 }
 
+impl CreatureList {
+    pub fn add_new_creature(&mut self, creature_item: CreatureItem) {
+        if creature_item.initiative.is_none() {
+            self.items.insert(0, creature_item);
+        } else {
+            self.items.push(creature_item);
+        }
+    }
+}
+
 impl From<&CreatureItem> for ListItem<'_> {
     fn from(value: &CreatureItem) -> Self {
         let line = match value.status {
-            Status::Alive => Line::styled(format!(" ✓ {}", value.name), COMPLETED_TEXT_FG_COLOR),
+            Status::Alive => {
+                if value.initiative.is_some() {
+                    Line::styled(format!(" ✓ {}", value.name), COMPLETED_TEXT_FG_COLOR)
+                } else {
+                    Line::styled(format!(" ✓ {}", value.name), NO_INITIATIVE_STYLE)
+                }
+            }
             Status::Dead => Line::styled(format!(" X {}", value.name), DEAD_TEXT_FG_COLOR),
         };
         ListItem::new(line)
