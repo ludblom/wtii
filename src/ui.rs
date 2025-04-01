@@ -18,6 +18,7 @@ use ratatui::{
     },
     DefaultTerminal,
 };
+use tui_input::Input;
 
 const WTII_HEADER_STYLE: Style = Style::new().fg(SLATE.c100).bg(BLUE.c800);
 const NORMAL_ROW_BG: Color = SLATE.c950;
@@ -26,6 +27,7 @@ const SELECTED_STYLE: Style = Style::new().bg(SLATE.c800).add_modifier(Modifier:
 const TEXT_FG_COLOR: Color = SLATE.c200;
 
 pub struct App {
+    input_creature_name: Input,
     should_exit: bool,
     show_creature_search_popup: bool,
     creature_list: CreatureList,
@@ -34,6 +36,7 @@ pub struct App {
 impl Default for App {
     fn default() -> Self {
         Self {
+            input_creature_name: Input::new("".to_string()),
             should_exit: false,
             show_creature_search_popup: false,
             creature_list: CreatureList::from_iter([
@@ -61,19 +64,17 @@ impl App {
             return;
         }
         match key.code {
-            KeyCode::Char('q') | KeyCode::Esc => {
-                if self.show_creature_search_popup {
-                    self.show_creature_search_popup = false;
-                } else {
-                    self.should_exit = true
-                }
-            }
+            KeyCode::Char('q') | KeyCode::Esc => match self.show_creature_search_popup {
+                true => self.show_creature_search_popup = false,
+                false => self.should_exit = true,
+            },
             KeyCode::Char('u') => self.select_none(),
             KeyCode::Char('j') | KeyCode::Down => self.select_next(),
             KeyCode::Char('k') | KeyCode::Up => self.select_previous(),
             KeyCode::Char('h') | KeyCode::Left => self.lower_health(),
             KeyCode::Char('l') | KeyCode::Right => self.increase_health(),
             KeyCode::Char('i') => self.show_creature_search_popup = true,
+            KeyCode::Char('c') => self.insert_new(),
             _ => {}
         }
     }
@@ -144,7 +145,7 @@ impl Widget for &mut App {
         if self.show_creature_search_popup {
             let area = App::popup_area(main_area);
             App::clear_area(area, buf);
-            App::render_creature_search_popup(area, buf);
+            App::render_creature_search_popup(&self, area, buf);
         }
     }
 }
@@ -154,13 +155,17 @@ impl App {
     fn clear_area(area: Rect, buf: &mut Buffer) {
         Clear.render(area, buf);
     }
-    fn render_creature_search_popup(area: Rect, buf: &mut Buffer) {
+    fn render_creature_search_popup(&self, area: Rect, buf: &mut Buffer) {
         Self::popup_area(area);
         Block::bordered()
             .title("Creature Search")
             .borders(Borders::ALL)
             .bg(NORMAL_ROW_BG)
             .render(area, buf);
+
+        // Paragraph::new(self.input_creature_name.value())
+        //     .block(Block::bordered().title("Creature Name"))
+        //     .render(area, buf);
     }
 
     fn popup_area(area: Rect) -> Rect {
