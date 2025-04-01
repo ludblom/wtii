@@ -1,6 +1,5 @@
 use crate::creature::Faction;
 use crate::creature::{CreatureItem, CreatureList, Status};
-use color_eyre::owo_colors::OwoColorize;
 use color_eyre::Result;
 use ratatui::{
     buffer::Buffer,
@@ -162,10 +161,6 @@ impl App {
             .borders(Borders::ALL)
             .bg(NORMAL_ROW_BG)
             .render(area, buf);
-
-        // Paragraph::new(self.input_creature_name.value())
-        //     .block(Block::bordered().title("Creature Name"))
-        //     .render(area, buf);
     }
 
     fn popup_area(area: Rect) -> Rect {
