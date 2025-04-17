@@ -179,6 +179,18 @@ impl CreatureList {
         } else {
             self.items.push(creature_item);
         }
+        self.sort_creature_list();
+    }
+
+    pub fn sort_creature_list(&mut self) {
+        self.items.sort_by(|creature_a, creature_b| {
+            match (&creature_a.initiative, &creature_b.initiative) {
+                (None, None) => std::cmp::Ordering::Equal,
+                (None, _) => std::cmp::Ordering::Less,
+                (_, None) => std::cmp::Ordering::Greater,
+                (Some(creature_a_val), Some(creature_b_val)) => creature_b_val.cmp(&creature_a_val),
+            }
+        })
     }
 }
 
