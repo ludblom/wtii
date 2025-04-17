@@ -74,6 +74,7 @@ impl App {
             KeyCode::Char('l') | KeyCode::Right => self.increase_health(),
             KeyCode::Char('i') => self.show_creature_search_popup = true,
             KeyCode::Char('c') => self.insert_new(),
+            KeyCode::Char('d') => self.delete_creature(),
             _ => {}
         }
     }
@@ -88,6 +89,12 @@ impl App {
 
     fn select_previous(&mut self) {
         self.creature_list.state.select_previous();
+    }
+
+    fn delete_creature(&mut self) {
+        if let Some(i) = self.creature_list.state.selected() {
+            self.creature_list.items.remove(i);
+        }
     }
 
     fn lower_health(&mut self) {
