@@ -194,6 +194,18 @@ impl CreatureList {
     }
 }
 
+impl Default for CreatureList {
+    fn default() -> Self {
+        CreatureList::from_iter([
+            // Status, Name, Description, HP, Faction, Armor Class
+            // TODO: Load from a config file
+            ("Samson", Some("A real bastard.")),
+            ("Thaurun", Some("Very nice guy!")),
+            ("Borbur", Some("A king.")),
+        ])
+    }
+}
+
 impl From<&CreatureItem> for ListItem<'_> {
     fn from(value: &CreatureItem) -> Self {
         let line = match value.status {

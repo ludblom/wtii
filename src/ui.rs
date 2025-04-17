@@ -26,23 +26,17 @@ const SELECTED_STYLE: Style = Style::new().bg(SLATE.c800).add_modifier(Modifier:
 const TEXT_FG_COLOR: Color = SLATE.c200;
 
 pub struct App {
-    input_creature_name: Input,
+    creature_list: CreatureList,
     should_exit: bool,
     show_creature_search_popup: bool,
-    creature_list: CreatureList,
 }
 
 impl Default for App {
     fn default() -> Self {
         Self {
-            input_creature_name: Input::new("".to_string()),
             should_exit: false,
             show_creature_search_popup: false,
-            creature_list: CreatureList::from_iter([
-                // Status, Name, Description, HP, Faction, Armor Class
-                ("Samson", None),
-                ("Red Proto Drake", Some("A big ass dragon")),
-            ]),
+            creature_list: CreatureList::default(),
         }
     }
 }
@@ -75,8 +69,13 @@ impl App {
             KeyCode::Char('i') => self.show_creature_search_popup = true,
             KeyCode::Char('c') => self.insert_new(),
             KeyCode::Char('d') => self.delete_creature(),
+            KeyCode::Char('e') => self.new_encounter(),
             _ => {}
         }
+    }
+
+    fn new_encounter(&mut self) {
+        self.creature_list = CreatureList::default();
     }
 
     fn select_none(&mut self) {
@@ -125,7 +124,7 @@ impl App {
 
     fn insert_new(&mut self) {
         let creature =
-            CreatureItem::new_npc("Borbur", Some("Big ass dude!"), 11, Some(44), Some(18));
+            CreatureItem::new_npc("Proto Drake", Some("Big dragon"), 11, Some(44), Some(18));
         self.creature_list.add_new_creature(creature);
     }
 }
