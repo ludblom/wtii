@@ -17,6 +17,7 @@ use ratatui::{
     },
     DefaultTerminal,
 };
+use tui_input::backend::crossterm::EventHandler;
 use tui_input::Input;
 
 const WTII_HEADER_STYLE: Style = Style::new().fg(SLATE.c100).bg(BLUE.c800);
@@ -29,6 +30,8 @@ pub struct App {
     creature_list: CreatureList,
     should_exit: bool,
     show_creature_search_popup: bool,
+    show_initiative_popup: bool,
+    initiative_input: Input,
 }
 
 impl Default for App {
@@ -37,6 +40,8 @@ impl Default for App {
             should_exit: false,
             show_creature_search_popup: false,
             creature_list: CreatureList::default(),
+            show_initiative_popup: false,
+            initiative_input: Input::default(),
         }
     }
 }
@@ -56,20 +61,56 @@ impl App {
         if key.kind != KeyEventKind::Press {
             return;
         }
+
+        if self.show_creature_search_popup {
+            match key.code {
+                KeyCode::Esc => {
+                    self.show_creature_search_popup = false;
+                }
+                _ => {}
+            }
+            return;
+        }
+
+        if self.show_initiative_popup {
+            match key.code {
+                KeyCode::Enter => {
+                    if let Some(i) = self.creature_list.state.selected() {
+                        if let Ok(new_initiative) = self.initiative_input.value().parse::<i64>() {
+                            self.creature_list.items[i].initiative = Some(new_initiative);
+                            self.creature_list.sort_creature_list();
+                        }
+                    }
+                    self.show_initiative_popup = false;
+                    self.initiative_input = Input::default();
+                }
+                KeyCode::Char('q') | KeyCode::Esc => {
+                    self.show_initiative_popup = false;
+                    self.initiative_input = Input::default();
+                }
+                _ => {
+                    self.initiative_input.handle_event(&Event::Key(key));
+                }
+            }
+            return;
+        }
+
         match key.code {
-            KeyCode::Char('q') | KeyCode::Esc => match self.show_creature_search_popup {
-                true => self.show_creature_search_popup = false,
-                false => self.should_exit = true,
-            },
+            KeyCode::Char('q') | KeyCode::Esc => self.should_exit = true,
             KeyCode::Char('u') => self.select_none(),
             KeyCode::Char('j') | KeyCode::Down => self.select_next(),
             KeyCode::Char('k') | KeyCode::Up => self.select_previous(),
             KeyCode::Char('h') | KeyCode::Left => self.lower_health(),
             KeyCode::Char('l') | KeyCode::Right => self.increase_health(),
-            KeyCode::Char('i') => self.show_creature_search_popup = true,
+            KeyCode::Char('s') => self.show_creature_search_popup = true,
             KeyCode::Char('c') => self.insert_new(),
             KeyCode::Char('d') => self.delete_creature(),
             KeyCode::Char('e') => self.new_encounter(),
+            KeyCode::Char('i') => {
+                if self.creature_list.state.selected().is_some() {
+                    self.show_initiative_popup = true;
+                }
+            }
             _ => {}
         }
     }
@@ -148,9 +189,15 @@ impl Widget for &mut App {
         self.render_selected_item(item_area, buf);
 
         if self.show_creature_search_popup {
-            let area = App::popup_area(main_area);
+            let area = App::popup_search_area(main_area);
             App::clear_area(area, buf);
             App::render_creature_search_popup(&self, area, buf);
+        }
+
+        if self.show_initiative_popup {
+            let area = App::popup_initiative_area(area);
+            App::clear_area(area, buf);
+            App::render_initiative_popup(&self, area, buf);
         }
     }
 }
@@ -160,8 +207,23 @@ impl App {
     fn clear_area(area: Rect, buf: &mut Buffer) {
         Clear.render(area, buf);
     }
+
+    fn render_initiative_popup(&self, area: Rect, buf: &mut Buffer) {
+        let block = Block::bordered()
+            .title("Set Initiative")
+            .borders(Borders::ALL)
+            .bg(NORMAL_ROW_BG);
+
+        let input = Paragraph::new(self.initiative_input.value())
+            .block(block)
+            .fg(TEXT_FG_COLOR)
+            .wrap(Wrap { trim: false })
+            .alignment(ratatui::layout::Alignment::Center);
+
+        input.render(area, buf);
+    }
+
     fn render_creature_search_popup(&self, area: Rect, buf: &mut Buffer) {
-        Self::popup_area(area);
         Block::bordered()
             .title("Creature Search")
             .borders(Borders::ALL)
@@ -169,9 +231,17 @@ impl App {
             .render(area, buf);
     }
 
-    fn popup_area(area: Rect) -> Rect {
+    fn popup_search_area(area: Rect) -> Rect {
         let vertical = Layout::vertical([Constraint::Percentage(90)]).flex(Flex::Center);
         let horizontal = Layout::horizontal([Constraint::Percentage(90)]).flex(Flex::Center);
+        let [area] = vertical.areas(area);
+        let [area] = horizontal.areas(area);
+        area
+    }
+
+    fn popup_initiative_area(area: Rect) -> Rect {
+        let vertical = Layout::vertical([Constraint::Percentage(30)]).flex(Flex::Center);
+        let horizontal = Layout::horizontal([Constraint::Percentage(40)]).flex(Flex::Center);
         let [area] = vertical.areas(area);
         let [area] = horizontal.areas(area);
         area
@@ -220,10 +290,11 @@ impl App {
 
     fn render_selected_item(&self, area: Rect, buf: &mut Buffer) {
         let info = if let Some(i) = self.creature_list.state.selected() {
+            let initiative_is_set: bool = self.creature_list.items[i].initiative.is_some();
             match self.creature_list.items[i].faction {
                 Faction::Npc => format!(
                     " Initiative: {}\n Name: {}\n HP: {}\n AC: {}\n Description: {}",
-                    if self.creature_list.items[i].initiative.is_some() {
+                    if initiative_is_set {
                         self.creature_list.items[i].initiative.unwrap().to_string()
                     } else {
                         "Not set yet".to_string()
@@ -238,7 +309,7 @@ impl App {
                 ),
                 Faction::Player => format!(
                     " Initiative: {}\n Name: {}\n HP: {}\n Description: {}",
-                    if self.creature_list.items[i].initiative.is_some() {
+                    if initiative_is_set {
                         self.creature_list.items[i].initiative.unwrap().to_string()
                     } else {
                         "Not set yet".to_string()
