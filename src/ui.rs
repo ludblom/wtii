@@ -124,11 +124,45 @@ impl App {
     }
 
     fn select_next(&mut self) {
-        self.creature_list.state.select_next();
+        let creature_count: usize = self.creature_list.items.len();
+
+        match self.creature_list.state.selected() {
+            Some(i) => {
+                if i + 1 < creature_count {
+                    self.creature_list.state.select_next();
+                } else {
+                    self.creature_list.state.select_first();
+                }
+            }
+            None => {
+                if creature_count > 0 {
+                    self.creature_list.state.select_first();
+                } else {
+                    self.creature_list.state.select(None);
+                }
+            }
+        }
     }
 
     fn select_previous(&mut self) {
-        self.creature_list.state.select_previous();
+        let creature_count: usize = self.creature_list.items.len();
+
+        match self.creature_list.state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    self.creature_list.state.select_last();
+                } else {
+                    self.creature_list.state.select_previous();
+                }
+            }
+            None => {
+                if creature_count > 0 {
+                    self.creature_list.state.select_last();
+                } else {
+                    self.creature_list.state.select(None);
+                }
+            }
+        }
     }
 
     fn delete_creature(&mut self) {
