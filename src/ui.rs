@@ -63,38 +63,19 @@ impl App {
         }
 
         if self.show_creature_search_popup {
-            match key.code {
-                KeyCode::Esc => {
-                    self.show_creature_search_popup = false;
-                }
-                _ => {}
-            }
+            self.handle_creature_search_input(&key);
             return;
         }
 
         if self.show_initiative_popup {
-            match key.code {
-                KeyCode::Enter => {
-                    if let Some(i) = self.creature_list.state.selected() {
-                        if let Ok(new_initiative) = self.initiative_input.value().parse::<i64>() {
-                            self.creature_list.items[i].initiative = Some(new_initiative);
-                            self.creature_list.sort_creature_list();
-                        }
-                    }
-                    self.show_initiative_popup = false;
-                    self.initiative_input = Input::default();
-                }
-                KeyCode::Char('q') | KeyCode::Esc => {
-                    self.show_initiative_popup = false;
-                    self.initiative_input = Input::default();
-                }
-                _ => {
-                    self.initiative_input.handle_event(&Event::Key(key));
-                }
-            }
+            self.handle_initiative_input(&key);
             return;
         }
 
+        self.handle_general_input(&key);
+    }
+
+    fn handle_general_input(&mut self, key: &KeyEvent) {
         match key.code {
             KeyCode::Char('q') | KeyCode::Esc => self.should_exit = true,
             KeyCode::Char('u') => self.select_none(),
@@ -110,6 +91,37 @@ impl App {
                 if self.creature_list.state.selected().is_some() {
                     self.show_initiative_popup = true;
                 }
+            }
+            _ => {}
+        }
+    }
+
+    fn handle_initiative_input(&mut self, key: &KeyEvent) {
+        match key.code {
+            KeyCode::Enter => {
+                if let Some(i) = self.creature_list.state.selected() {
+                    if let Ok(new_initiative) = self.initiative_input.value().parse::<i64>() {
+                        self.creature_list.items[i].initiative = Some(new_initiative);
+                        self.creature_list.sort_creature_list();
+                    }
+                }
+                self.show_initiative_popup = false;
+                self.initiative_input = Input::default();
+            }
+            KeyCode::Char('q') | KeyCode::Esc => {
+                self.show_initiative_popup = false;
+                self.initiative_input = Input::default();
+            }
+            _ => {
+                self.initiative_input.handle_event(&Event::Key(*key));
+            }
+        }
+    }
+
+    fn handle_creature_search_input(&mut self, key: &KeyEvent) {
+        match key.code {
+            KeyCode::Esc => {
+                self.show_creature_search_popup = false;
             }
             _ => {}
         }
