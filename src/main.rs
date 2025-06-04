@@ -1,8 +1,5 @@
 use color_eyre::Result;
-
-mod api;
-mod creature;
-mod ui;
+use wtii::ui;
 
 #[tokio::main]
 async fn main() -> Result<()> {

@@ -3,8 +3,32 @@ use json::JsonValue;
 use rand::random_range;
 use reqwest::{Client, Error, Response};
 
-pub async fn search_for_creature(name: &str) -> Result<Vec<CreatureItem>, String> {
-    let creatures_resp: Response = match get_api_response(name).await {
+static API_BASE_URL: &str = "https://api.open5e.com";
+
+pub trait ApiCall {
+    fn monster_search(
+        &self,
+        name: &str,
+    ) -> impl std::future::Future<Output = Result<Response, Error>> + Send;
+}
+
+pub struct MonsterSearch;
+
+impl ApiCall for MonsterSearch {
+    async fn monster_search(&self, name: &str) -> Result<Response, Error> {
+        let client = Client::new();
+        client
+            .get(format!("{}/monsters/?search={}", API_BASE_URL, name))
+            .send()
+            .await
+    }
+}
+
+pub async fn search_for_creature<T: ApiCall>(
+    api: &T,
+    name: &str,
+) -> Result<Vec<CreatureItem>, String> {
+    let creatures_resp: Response = match api.monster_search(name).await {
         Ok(resp) => resp,
         Err(e) => return Err(format!("Unable to make API request: {}", e.to_string())),
     };
@@ -24,14 +48,6 @@ pub async fn search_for_creature(name: &str) -> Result<Vec<CreatureItem>, String
     };
 
     parse_json_response(&parsed_values).ok_or("Unable to parse json response from API".to_string())
-}
-
-async fn get_api_response(name: &str) -> Result<Response, Error> {
-    let client = Client::new();
-    client
-        .get(format!("https://api.open5e.com/monsters/?search={}", name))
-        .send()
-        .await
 }
 
 fn parse_json_response(json_resp: &JsonValue) -> Option<Vec<CreatureItem>> {
