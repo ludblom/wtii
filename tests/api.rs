@@ -11,7 +11,7 @@ mod tests {
     use super::*;
     use mockito;
     use reqwest::{Error, Response, StatusCode};
-    use wtii::api::{search_for_creature, ApiCall};
+    use wtii::api::{parse_json_response, search_for_creature, ApiCall};
 
     struct MockMonsterSearchOneCreature;
     struct MockMonsterSearchTimeoutError;
@@ -64,5 +64,12 @@ mod tests {
         let mock = MockMonsterSearchTimeoutError;
         let res = search_for_creature(&mock, "mock-call").await;
         assert!(res.is_err());
+    }
+
+    #[test]
+    fn test_parse_json_response() {
+        let data: String = load_mock_creature_json("single_creature_response.json");
+        let res = parse_json_response(data);
+        assert!(res.is_ok());
     }
 }

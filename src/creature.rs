@@ -16,6 +16,79 @@ pub struct CreatureList {
     pub state: ListState,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct Skills {
+    pub athletics: Option<i64>,
+    pub perception: Option<i64>,
+    pub stealth: Option<i64>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Action {
+    pub name: String,
+    pub desc: String,
+    pub attack_bonus: Option<i64>,
+    pub damage_dice: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SpecialAbility {
+    pub name: String,
+    pub desc: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ApiCreatureSearchItem {
+    pub name: String,
+    pub size: Option<String>,
+    pub subtype: Option<String>,
+    pub group: Option<String>,
+    pub alignment: Option<String>,
+    pub armor_class: Option<i64>,
+    pub armor_desc: Option<String>,
+    pub hit_points: Option<i64>,
+    pub hit_dice: Option<String>,
+    pub speed: Option<Speed>,
+    pub strength: Option<i64>,
+    pub dexterity: Option<i64>,
+    pub constitution: Option<i64>,
+    pub intelligence: Option<i64>,
+    pub wisdom: Option<i64>,
+    pub charisma: Option<i64>,
+    pub strength_save: Option<i64>,
+    pub dexterity_save: Option<i64>,
+    pub constitution_save: Option<i64>,
+    pub intelligence_save: Option<i64>,
+    pub wisdom_save: Option<i64>,
+    pub charisma_save: Option<i64>,
+    pub perception: Option<i64>,
+    pub skills: Option<Skills>,
+    pub damage_vulnerabilities: Option<String>,
+    pub damage_resistances: Option<String>,
+    pub damage_immunities: Option<String>,
+    pub condition_immunities: Option<String>,
+    pub senses: Option<String>,
+    pub languages: Option<String>,
+    pub challenge_rating: Option<String>,
+    pub actions: Option<Vec<Action>>,
+    pub reactions: Option<String>,
+    pub legendary_desc: Option<String>,
+    pub legendary_actions: Option<String>,
+    pub special_abilities: Option<Vec<SpecialAbility>>,
+    pub spell_list: Option<Vec<String>>,
+    pub document_slug: Option<String>,
+    pub document_title: Option<String>,
+    pub document_license_url: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Speed {
+    pub walk: Option<i64>,
+    pub fly: Option<i64>,
+    pub swim: Option<i64>,
+    pub burrow: Option<i64>,
+}
+
 #[derive(Debug, Deserialize, Default)]
 pub struct CreatureItem {
     pub name: String,
@@ -27,7 +100,7 @@ pub struct CreatureItem {
     pub armor_class: Option<i64>,
     pub armor_desc: Option<String>,
     pub desc: Option<String>,
-    // pub speed: Option<String>,
+    pub speed: Option<Speed>,
     pub size: Option<String>,
     pub creature_type: Option<String>,
     pub sub_creature_type: Option<String>,
@@ -44,17 +117,18 @@ pub struct CreatureItem {
     pub wisdom_save: Option<i64>,
     pub charisma_save: Option<i64>,
     pub perception: Option<String>,
-    // pub skills: Option<String>,
+    pub skills: Option<Skills>,
     pub damage_vulnerabilities: Option<String>,
     pub damage_resistances: Option<Vec<String>>,
     pub damage_immunities: Option<Vec<String>>,
     pub condition_immunities: Option<Vec<String>>,
-    //pub senses: Option<String>,
+    pub senses: Option<String>,
     pub languages: Option<String>,
-    //pub challenge_rating: Option<String>,
+    pub challenge_rating: Option<String>,
     pub actions: Option<Vec<Attack>>,
     pub legendary_actions: Option<Vec<Attack>>,
     pub reactions: Option<Vec<Attack>>,
+    pub special_abilities: Option<Vec<SpecialAbility>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -93,6 +167,7 @@ impl CreatureItem {
             } else {
                 Some(desc.unwrap().to_string())
             },
+            speed: None,
             size: None,
             creature_type: None,
             sub_creature_type: None,
@@ -109,14 +184,18 @@ impl CreatureItem {
             wisdom_save: None,
             charisma_save: None,
             perception: None,
+            skills: None,
             damage_vulnerabilities: None,
             damage_resistances: None,
             damage_immunities: None,
             condition_immunities: None,
+            senses: None,
             languages: None,
+            challenge_rating: None,
             actions: None,
             legendary_actions: None,
             reactions: None,
+            special_abilities: None,
         }
     }
 
@@ -144,6 +223,7 @@ impl CreatureItem {
             } else {
                 Some(desc.unwrap().to_string())
             },
+            speed: None,
             size: None,
             creature_type: None,
             sub_creature_type: None,
@@ -160,14 +240,18 @@ impl CreatureItem {
             wisdom_save: None,
             charisma_save: None,
             perception: None,
+            skills: None,
             damage_vulnerabilities: None,
             damage_resistances: None,
             damage_immunities: None,
             condition_immunities: None,
+            senses: None,
             languages: None,
+            challenge_rating: None,
             actions: None,
             legendary_actions: None,
             reactions: None,
+            special_abilities: None,
         }
     }
 }
