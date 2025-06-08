@@ -1,6 +1,8 @@
 use crate::creature::{ApiCreatureSearchItem, Faction};
 use crate::creature::{CreatureItem, CreatureList, Status};
 use color_eyre::Result;
+use ratatui::layout::Direction;
+use ratatui::text::Text;
 use ratatui::{
     buffer::Buffer,
     crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
@@ -46,6 +48,7 @@ pub struct App {
     show_creature_search_popup: bool,
     show_initiative_popup: bool,
     initiative_input: Input,
+    creature_search_input: String,
 }
 
 impl Default for App {
@@ -56,6 +59,7 @@ impl Default for App {
             creature_list: CreatureList::default(),
             show_initiative_popup: false,
             initiative_input: Input::default(),
+            creature_search_input: String::default(),
         }
     }
 }
@@ -288,6 +292,15 @@ impl App {
             .borders(Borders::ALL)
             .bg(NORMAL_ROW_BG)
             .render(area, buf);
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
+            .margin(1)
+            .split(area);
+        let input = Paragraph::new(Text::from(self.creature_search_input.as_str()))
+            .block(Block::default().borders(Borders::ALL).title("Search"));
+
+        input.render(chunks[0], buf);
     }
 
     fn popup_search_area(area: Rect) -> Rect {
@@ -314,13 +327,18 @@ impl App {
     }
 
     fn render_footer(area: Rect, buf: &mut Buffer) {
-        Paragraph::new(
-            format!(
-                "Use {} for new encounter, {} to set initiative, {} and {} to change health, {} and {} to switch between creatures.", NEW_ENCOUNTER_KEY, SET_INITIATIVE_KEY, LOWER_HEALTH_KEY, INCREASE_HEALTH_KEY, MOVE_DOWN_KEY, MOVE_UP_KEY
-            )
-        )
-            .centered()
-            .render(area, buf);
+        Paragraph::new(format!(
+            "Use {} for new encounter, {} to set initiative, {} and {} to change \
+                health, {} and {} to switch between creatures.",
+            NEW_ENCOUNTER_KEY,
+            SET_INITIATIVE_KEY,
+            LOWER_HEALTH_KEY,
+            INCREASE_HEALTH_KEY,
+            MOVE_DOWN_KEY,
+            MOVE_UP_KEY
+        ))
+        .centered()
+        .render(area, buf);
     }
 
     fn render_list(&mut self, area: Rect, buf: &mut Buffer) {
