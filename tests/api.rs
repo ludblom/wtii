@@ -10,10 +10,12 @@ fn load_mock_creature_json(file: &str) -> String {
 mod tests {
     use super::*;
     use mockito;
-    use reqwest::{Error, Response, StatusCode};
+    use reqwest::{Error, Response};
     use wtii::api::{parse_json_response, search_for_creature, ApiCall};
 
     struct MockMonsterSearchOneCreature;
+    struct MockMonsterSearchMultipleCreatures;
+    struct MockMonsterSearchLotsOfCreatures;
     struct MockMonsterSearchTimeoutError;
 
     impl ApiCall for MockMonsterSearchOneCreature {
@@ -25,6 +27,44 @@ mod tests {
                 .with_status(200)
                 .with_header("content-type", "application/json")
                 .with_body(load_mock_creature_json("single_creature_response.json"))
+                .create_async()
+                .await;
+            let client = Client::new();
+            client
+                .get(format!("{}{}", &server.url(), endpoint))
+                .send()
+                .await
+        }
+    }
+
+    impl ApiCall for MockMonsterSearchMultipleCreatures {
+        async fn monster_search(&self, name: &str) -> Result<Response, Error> {
+            let endpoint: &str = &format!("/monsters/?search={}", name);
+            let mut server = mockito::Server::new_async().await;
+            let _m = server
+                .mock("GET", endpoint)
+                .with_status(200)
+                .with_header("content-type", "application/json")
+                .with_body(load_mock_creature_json("multiple_creatures_response.json"))
+                .create_async()
+                .await;
+            let client = Client::new();
+            client
+                .get(format!("{}{}", &server.url(), endpoint))
+                .send()
+                .await
+        }
+    }
+
+    impl ApiCall for MockMonsterSearchLotsOfCreatures {
+        async fn monster_search(&self, name: &str) -> Result<Response, Error> {
+            let endpoint: &str = &format!("/monsters/?search={}", name);
+            let mut server = mockito::Server::new_async().await;
+            let _m = server
+                .mock("GET", endpoint)
+                .with_status(200)
+                .with_header("content-type", "application/json")
+                .with_body(load_mock_creature_json("lots_of_resp.json"))
                 .create_async()
                 .await;
             let client = Client::new();
@@ -55,6 +95,20 @@ mod tests {
     #[tokio::test]
     async fn test_search_for_one_creature_ok() {
         let mock = MockMonsterSearchOneCreature;
+        let res = search_for_creature(&mock, "mock-call").await;
+        assert!(res.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_search_multiple_creatures_ok() {
+        let mock = MockMonsterSearchMultipleCreatures;
+        let res = search_for_creature(&mock, "mock-call").await;
+        assert!(res.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_search_lots_of_creatures_ok() {
+        let mock = MockMonsterSearchLotsOfCreatures;
         let res = search_for_creature(&mock, "mock-call").await;
         assert!(res.is_ok());
     }

@@ -1,3 +1,4 @@
+use crate::api::{search_for_creature, MonsterSearch};
 use crate::creature::{ApiCreatureSearchItem, Faction};
 use crate::creature::{CreatureItem, CreatureList, Status};
 use color_eyre::Result;
@@ -140,6 +141,28 @@ impl App {
         match key.code {
             KeyCode::Esc => {
                 self.show_creature_search_popup = false;
+            }
+            KeyCode::Char(c) => {
+                self.creature_search_input.push(c);
+            }
+            KeyCode::Backspace => {
+                self.creature_search_input.pop();
+            }
+            KeyCode::Enter => {
+                let input = self.creature_search_input.clone();
+                let api = MonsterSearch;
+
+                tokio::spawn(async move {
+                    match search_for_creature(&api, &input).await {
+                        // TODO: Take the result and present it
+                        Ok(results) => {
+                            println!("Found {} matches!", results.len());
+                        }
+                        Err(e) => {
+                            println!("Nothing found!!! Error: {}", e);
+                        }
+                    }
+                });
             }
             _ => {}
         }

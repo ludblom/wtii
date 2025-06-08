@@ -34,17 +34,16 @@ pub async fn search_for_creature<T: ApiCall>(
 
     let resp = creatures_resp.text().await;
 
-    let resp_str = match &resp {
-        Ok(text) => text.as_str(),
-        Err(e) => return Err(e.to_string()),
-    }
-    .to_string();
+    let resp_str: String = match &resp {
+        Ok(text) => text.to_string(),
+        Err(e) => return Err(format!("Unable to parse string: {}", e.to_string())),
+    };
 
     let parsed_data = parse_json_response(resp_str);
 
     match parsed_data {
         Ok(data) => Ok(data),
-        Err(e) => Err(format!("Unable to parse response: {}", e.to_string())),
+        Err(e) => Err(format!("Unable to parse response: {}", e)),
     }
 }
 

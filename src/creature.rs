@@ -17,6 +17,12 @@ pub struct CreatureList {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct Reaction {
+    pub name: String,
+    pub desc: String,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct Speed {
     pub walk: Option<i64>,
     pub fly: Option<i64>,
@@ -80,9 +86,9 @@ pub struct ApiCreatureSearchItem {
     pub languages: Option<String>,
     pub challenge_rating: Option<String>,
     pub actions: Option<Vec<Action>>,
-    pub reactions: Option<String>,
+    pub reactions: Option<Vec<Reaction>>,
     pub legendary_desc: Option<String>,
-    pub legendary_actions: Option<String>,
+    pub legendary_actions: Option<Vec<Action>>,
     pub special_abilities: Option<Vec<SpecialAbility>>,
     pub spell_list: Option<Vec<String>>,
     pub document_slug: Option<String>,
