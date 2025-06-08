@@ -17,6 +17,14 @@ pub struct CreatureList {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct Speed {
+    pub walk: Option<i64>,
+    pub fly: Option<i64>,
+    pub swim: Option<i64>,
+    pub burrow: Option<i64>,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct Skills {
     pub athletics: Option<i64>,
     pub perception: Option<i64>,
@@ -40,13 +48,14 @@ pub struct SpecialAbility {
 #[derive(Debug, Deserialize)]
 pub struct ApiCreatureSearchItem {
     pub name: String,
+    pub desc: Option<String>,
     pub size: Option<String>,
     pub subtype: Option<String>,
     pub group: Option<String>,
     pub alignment: Option<String>,
     pub armor_class: Option<i64>,
     pub armor_desc: Option<String>,
-    pub hit_points: Option<i64>,
+    pub hit_points: Option<u64>,
     pub hit_dice: Option<String>,
     pub speed: Option<Speed>,
     pub strength: Option<i64>,
@@ -81,17 +90,10 @@ pub struct ApiCreatureSearchItem {
     pub document_license_url: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct Speed {
-    pub walk: Option<i64>,
-    pub fly: Option<i64>,
-    pub swim: Option<i64>,
-    pub burrow: Option<i64>,
-}
-
 #[derive(Debug, Deserialize, Default)]
 pub struct CreatureItem {
     pub name: String,
+    pub desc: Option<String>,
     pub status: Status,
     pub faction: Faction,
     pub initiative: Option<i64>,
@@ -99,7 +101,6 @@ pub struct CreatureItem {
     pub hit_dice: Option<String>,
     pub armor_class: Option<i64>,
     pub armor_desc: Option<String>,
-    pub desc: Option<String>,
     pub speed: Option<Speed>,
     pub size: Option<String>,
     pub creature_type: Option<String>,
@@ -199,36 +200,26 @@ impl CreatureItem {
         }
     }
 
-    pub fn new_npc(
-        name: &str,
-        desc: Option<&str>,
-        dexterity: i64,
-        hit_points: Option<u64>,
-        armor_class: Option<i64>,
-    ) -> Self {
+    pub fn new_npc(api_creature: &ApiCreatureSearchItem) -> Self {
         Self {
             status: Status::Alive,
             faction: Faction::Npc,
-            name: name.to_string(),
+            name: api_creature.name.clone(),
             initiative: {
-                let initiative_modifier: i64 = (dexterity - 10) / 2;
+                let initiative_modifier: i64 = (api_creature.dexterity.unwrap_or(0) - 10) / 2;
                 Some(random_range(1..21) + initiative_modifier)
             },
-            hit_points,
+            hit_points: api_creature.hit_points,
             hit_dice: None,
-            armor_class,
+            armor_class: api_creature.armor_class,
             armor_desc: None,
-            desc: if desc.is_none() {
-                None
-            } else {
-                Some(desc.unwrap().to_string())
-            },
+            desc: api_creature.desc.clone(),
             speed: None,
             size: None,
             creature_type: None,
             sub_creature_type: None,
             strength: None,
-            dexterity: Some(dexterity),
+            dexterity: api_creature.dexterity,
             constitution: None,
             intelligence: None,
             wisdom: None,
@@ -275,6 +266,54 @@ impl CreatureList {
                 (Some(creature_a_val), Some(creature_b_val)) => creature_b_val.cmp(&creature_a_val),
             }
         })
+    }
+}
+
+impl Default for ApiCreatureSearchItem {
+    fn default() -> Self {
+        ApiCreatureSearchItem {
+            name: "Test Creature".to_string(),
+            desc: Some("Default desc".to_string()),
+            size: None,
+            subtype: None,
+            group: None,
+            alignment: None,
+            armor_class: Some(18),
+            armor_desc: None,
+            hit_points: Some(20),
+            hit_dice: None,
+            speed: None,
+            strength: None,
+            dexterity: Some(30),
+            constitution: Some(12),
+            intelligence: Some(13),
+            wisdom: Some(14),
+            charisma: Some(15),
+            strength_save: None,
+            dexterity_save: None,
+            constitution_save: None,
+            intelligence_save: None,
+            wisdom_save: None,
+            charisma_save: None,
+            perception: None,
+            skills: None,
+            damage_vulnerabilities: None,
+            damage_resistances: None,
+            damage_immunities: None,
+            condition_immunities: None,
+            senses: None,
+            languages: None,
+            challenge_rating: None,
+            actions: None,
+            reactions: None,
+            legendary_desc: None,
+            legendary_actions: None,
+            special_abilities: None,
+            spell_list: None,
+            document_slug: None,
+            document_title: None,
+            document_license_url: None,
+        }
     }
 }
 

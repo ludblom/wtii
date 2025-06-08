@@ -1,4 +1,4 @@
-use crate::creature::Faction;
+use crate::creature::{ApiCreatureSearchItem, Faction};
 use crate::creature::{CreatureItem, CreatureList, Status};
 use color_eyre::Result;
 use ratatui::{
@@ -210,8 +210,7 @@ impl App {
     }
 
     fn insert_new(&mut self) {
-        let creature =
-            CreatureItem::new_npc("Proto Drake", Some("Big dragon"), 11, Some(44), Some(18));
+        let creature = CreatureItem::new_npc(&ApiCreatureSearchItem::default());
         self.creature_list.add_new_creature(creature);
     }
 }
