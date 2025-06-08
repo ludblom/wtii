@@ -20,11 +20,25 @@ use ratatui::{
 use tui_input::backend::crossterm::EventHandler;
 use tui_input::Input;
 
+// Colors
 const WTII_HEADER_STYLE: Style = Style::new().fg(SLATE.c100).bg(BLUE.c800);
 const NORMAL_ROW_BG: Color = SLATE.c950;
 const ALT_ROW_BG_COLOR: Color = SLATE.c900;
 const SELECTED_STYLE: Style = Style::new().bg(SLATE.c800).add_modifier(Modifier::BOLD);
 const TEXT_FG_COLOR: Color = SLATE.c200;
+
+// Keybindings
+const NEW_ENCOUNTER_KEY: char = 'e';
+const SET_INITIATIVE_KEY: char = 'i';
+const QUIT_APP_KEY: char = 'q';
+const UNSELECT_ALL_KEY: char = 'u';
+const MOVE_DOWN_KEY: char = 'j';
+const MOVE_UP_KEY: char = 'k';
+const LOWER_HEALTH_KEY: char = 'h';
+const INCREASE_HEALTH_KEY: char = 'l';
+const SEARCH_FOR_NEW_CREATURE_KEY: char = 's';
+const INSERT_NEW_PLAYER_KEY: char = 'c';
+const DELETE_CREATURE_KEY: char = 'd';
 
 pub struct App {
     creature_list: CreatureList,
@@ -77,17 +91,17 @@ impl App {
 
     fn handle_general_input(&mut self, key: &KeyEvent) {
         match key.code {
-            KeyCode::Char('q') | KeyCode::Esc => self.should_exit = true,
-            KeyCode::Char('u') => self.select_none(),
-            KeyCode::Char('j') | KeyCode::Down => self.select_next(),
-            KeyCode::Char('k') | KeyCode::Up => self.select_previous(),
-            KeyCode::Char('h') | KeyCode::Left => self.lower_health(),
-            KeyCode::Char('l') | KeyCode::Right => self.increase_health(),
-            KeyCode::Char('s') => self.show_creature_search_popup = true,
-            KeyCode::Char('c') => self.insert_new(),
-            KeyCode::Char('d') => self.delete_creature(),
-            KeyCode::Char('e') => self.new_encounter(),
-            KeyCode::Char('i') => {
+            KeyCode::Char(QUIT_APP_KEY) | KeyCode::Esc => self.should_exit = true,
+            KeyCode::Char(UNSELECT_ALL_KEY) => self.select_none(),
+            KeyCode::Char(MOVE_DOWN_KEY) | KeyCode::Down => self.select_next(),
+            KeyCode::Char(MOVE_UP_KEY) | KeyCode::Up => self.select_previous(),
+            KeyCode::Char(LOWER_HEALTH_KEY) | KeyCode::Left => self.lower_health(),
+            KeyCode::Char(INCREASE_HEALTH_KEY) | KeyCode::Right => self.increase_health(),
+            KeyCode::Char(SEARCH_FOR_NEW_CREATURE_KEY) => self.show_creature_search_popup = true,
+            KeyCode::Char(INSERT_NEW_PLAYER_KEY) => self.insert_new(),
+            KeyCode::Char(DELETE_CREATURE_KEY) => self.delete_creature(),
+            KeyCode::Char(NEW_ENCOUNTER_KEY) => self.new_encounter(),
+            KeyCode::Char(SET_INITIATIVE_KEY) => {
                 if self.creature_list.state.selected().is_some() {
                     self.show_initiative_popup = true;
                 }
@@ -108,7 +122,7 @@ impl App {
                 self.show_initiative_popup = false;
                 self.initiative_input = Input::default();
             }
-            KeyCode::Char('q') | KeyCode::Esc => {
+            KeyCode::Char(QUIT_APP_KEY) | KeyCode::Esc => {
                 self.show_initiative_popup = false;
                 self.initiative_input = Input::default();
             }
@@ -300,7 +314,11 @@ impl App {
     }
 
     fn render_footer(area: Rect, buf: &mut Buffer) {
-        Paragraph::new("Use e for new encounter, i to insert new creature, h and l to change health and n for next creature.")
+        Paragraph::new(
+            format!(
+                "Use {} for new encounter, {} to set initiative, {} and {} to change health, {} and {} to switch between creatures.", NEW_ENCOUNTER_KEY, SET_INITIATIVE_KEY, LOWER_HEALTH_KEY, INCREASE_HEALTH_KEY, MOVE_DOWN_KEY, MOVE_UP_KEY
+            )
+        )
             .centered()
             .render(area, buf);
     }
