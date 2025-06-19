@@ -336,7 +336,8 @@ impl Widget for &mut App {
         .areas(area);
 
         let [list_area, item_area] =
-            Layout::vertical([Constraint::Fill(1), Constraint::Fill(1)]).areas(main_area);
+            Layout::vertical([Constraint::Percentage(30), Constraint::Percentage(70)])
+                .areas(main_area);
 
         App::render_header(header_area, buf);
         App::render_footer(footer_area, buf);
