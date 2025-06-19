@@ -6,6 +6,7 @@ use ratatui::{
     widgets::{ListItem, ListState},
 };
 use serde::Deserialize;
+use std::fmt;
 
 const COMPLETED_TEXT_FG_COLOR: Color = GREEN.c500;
 const DEAD_TEXT_FG_COLOR: Color = RED.c500;
@@ -16,10 +17,16 @@ pub struct CreatureList {
     pub state: ListState,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Reaction {
     pub name: String,
     pub desc: String,
+}
+
+impl fmt::Display for Reaction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}: {}", self.name, self.desc)
+    }
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -30,11 +37,46 @@ pub struct Speed {
     pub burrow: Option<i64>,
 }
 
+impl fmt::Display for Speed {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut parts = Vec::new();
+        if let Some(val) = self.walk {
+            parts.push(format!("Walk: {}", val));
+        }
+        if let Some(val) = self.fly {
+            parts.push(format!("Fly: {}", val));
+        }
+        if let Some(val) = self.swim {
+            parts.push(format!("Swim: {}", val));
+        }
+        if let Some(val) = self.burrow {
+            parts.push(format!("Burrow: {}", val));
+        }
+        write!(f, "{}", parts.join(", "))
+    }
+}
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct Skills {
     pub athletics: Option<i64>,
     pub perception: Option<i64>,
     pub stealth: Option<i64>,
+}
+
+impl fmt::Display for Skills {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut parts = Vec::new();
+        if let Some(val) = self.athletics {
+            parts.push(format!("Athletics: {}", val));
+        }
+        if let Some(val) = self.perception {
+            parts.push(format!("Perception: {}", val));
+        }
+        if let Some(val) = self.stealth {
+            parts.push(format!("Stealth: {}", val));
+        }
+        write!(f, "{}", parts.join(", "))
+    }
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -45,10 +87,30 @@ pub struct Action {
     pub damage_dice: Option<String>,
 }
 
+impl fmt::Display for Action {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut parts = Vec::new();
+        parts.push(format!("{}: {}", self.name, self.desc));
+        if let Some(val) = self.attack_bonus {
+            parts.push(format!("(Attack Bonus: {})", val));
+        }
+        if let Some(val) = self.damage_dice.clone() {
+            parts.push(format!("(Damage Dice: {})", val));
+        }
+        write!(f, "{}", parts.join(", "))
+    }
+}
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct SpecialAbility {
     pub name: String,
     pub desc: String,
+}
+
+impl fmt::Display for SpecialAbility {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}: {}", self.name, self.desc)
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -109,8 +171,6 @@ pub struct CreatureItem {
     pub armor_desc: Option<String>,
     pub speed: Option<Speed>,
     pub size: Option<String>,
-    pub creature_type: Option<String>,
-    pub sub_creature_type: Option<String>,
     pub strength: Option<i64>,
     pub dexterity: Option<i64>,
     pub constitution: Option<i64>,
@@ -123,18 +183,18 @@ pub struct CreatureItem {
     pub intelligence_save: Option<i64>,
     pub wisdom_save: Option<i64>,
     pub charisma_save: Option<i64>,
-    pub perception: Option<String>,
+    pub perception: Option<i64>,
     pub skills: Option<Skills>,
     pub damage_vulnerabilities: Option<String>,
-    pub damage_resistances: Option<Vec<String>>,
-    pub damage_immunities: Option<Vec<String>>,
-    pub condition_immunities: Option<Vec<String>>,
+    pub damage_resistances: Option<String>,
+    pub damage_immunities: Option<String>,
+    pub condition_immunities: Option<String>,
     pub senses: Option<String>,
     pub languages: Option<String>,
     pub challenge_rating: Option<String>,
-    pub actions: Option<Vec<Attack>>,
-    pub legendary_actions: Option<Vec<Attack>>,
-    pub reactions: Option<Vec<Attack>>,
+    pub actions: Option<Vec<Action>>,
+    pub legendary_actions: Option<Vec<Action>>,
+    pub reactions: Option<Vec<Reaction>>,
     pub special_abilities: Option<Vec<SpecialAbility>>,
 }
 
@@ -176,8 +236,6 @@ impl CreatureItem {
             },
             speed: None,
             size: None,
-            creature_type: None,
-            sub_creature_type: None,
             strength: None,
             dexterity: None,
             constitution: None,
@@ -216,39 +274,37 @@ impl CreatureItem {
                 Some(random_range(1..21) + initiative_modifier)
             },
             hit_points: api_creature.hit_points,
-            hit_dice: None,
+            hit_dice: api_creature.hit_dice.clone(),
             armor_class: api_creature.armor_class,
-            armor_desc: None,
+            armor_desc: api_creature.armor_desc.clone(),
             desc: api_creature.desc.clone(),
-            speed: None,
-            size: None,
-            creature_type: None,
-            sub_creature_type: None,
-            strength: None,
+            speed: api_creature.speed.clone(),
+            size: api_creature.size.clone(),
+            strength: api_creature.strength,
             dexterity: api_creature.dexterity,
-            constitution: None,
-            intelligence: None,
-            wisdom: None,
-            charisma: None,
-            strength_save: None,
-            dexterity_save: None,
-            constitution_save: None,
-            intelligence_save: None,
-            wisdom_save: None,
-            charisma_save: None,
-            perception: None,
-            skills: None,
-            damage_vulnerabilities: None,
-            damage_resistances: None,
-            damage_immunities: None,
-            condition_immunities: None,
-            senses: None,
-            languages: None,
-            challenge_rating: None,
-            actions: None,
-            legendary_actions: None,
-            reactions: None,
-            special_abilities: None,
+            constitution: api_creature.constitution,
+            intelligence: api_creature.intelligence,
+            wisdom: api_creature.wisdom,
+            charisma: api_creature.charisma,
+            strength_save: api_creature.strength_save,
+            dexterity_save: api_creature.dexterity_save,
+            constitution_save: api_creature.constitution_save,
+            intelligence_save: api_creature.intelligence_save,
+            wisdom_save: api_creature.wisdom_save,
+            charisma_save: api_creature.charisma_save,
+            perception: api_creature.perception,
+            skills: api_creature.skills.clone(),
+            damage_vulnerabilities: api_creature.damage_vulnerabilities.clone(),
+            damage_resistances: api_creature.damage_resistances.clone(),
+            damage_immunities: api_creature.damage_immunities.clone(),
+            condition_immunities: api_creature.condition_immunities.clone(),
+            senses: api_creature.senses.clone(),
+            languages: api_creature.languages.clone(),
+            challenge_rating: api_creature.challenge_rating.clone(),
+            actions: api_creature.actions.clone(),
+            legendary_actions: api_creature.legendary_actions.clone(),
+            reactions: api_creature.reactions.clone(),
+            special_abilities: api_creature.special_abilities.clone(),
         }
     }
 }

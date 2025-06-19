@@ -1,5 +1,5 @@
 use crate::api::{search_for_creature, MonsterSearch};
-use crate::creature::{ApiCreatureSearchItem, Faction};
+use crate::creature::{Action, ApiCreatureSearchItem, Faction, Reaction, SpecialAbility};
 use crate::creature::{CreatureItem, CreatureList, Status};
 use color_eyre::Result;
 use ratatui::layout::Direction;
@@ -488,26 +488,14 @@ impl App {
         let info = if let Some(i) = self.creature_list.state.selected() {
             let initiative_is_set: bool = self.creature_list.items[i].initiative.is_some();
             match self.creature_list.items[i].faction {
-                Faction::Npc => format!(
-                    " Initiative: {}\n Name: {}\n HP: {} {}\n AC: {}\n Description: {}",
-                    if initiative_is_set {
-                        self.creature_list.items[i].initiative.unwrap().to_string()
-                    } else {
-                        "Not set yet".to_string()
-                    },
-                    self.creature_list.items[i].name,
-                    self.creature_list.items[i].hit_points.unwrap(),
-                    if self.increasing_or_decreasing_health {
-                        format!("({})", self.health_change)
-                    } else {
-                        String::new()
-                    },
-                    self.creature_list.items[i].armor_class.unwrap(),
-                    match &self.creature_list.items[i].desc {
-                        Some(desc) => desc.to_string(),
-                        None => "".to_string(),
-                    },
-                ),
+                Faction::Npc => {
+                    let lines = npc_info(self, i);
+                    lines
+                        .into_iter()
+                        .map(|(k, v)| format!("{}: {}", k, v))
+                        .collect::<Vec<_>>()
+                        .join("\n")
+                }
                 Faction::Player => format!(
                     " Initiative: {}\n Name: {}\n HP: {}\n Description: {}",
                     if initiative_is_set {
@@ -544,6 +532,159 @@ impl App {
             .wrap(Wrap { trim: false })
             .render(area, buf);
     }
+}
+
+fn npc_info(app: &App, i: usize) -> Vec<(String, String)> {
+    let c = &app.creature_list.items[i];
+    let mut lines = Vec::new();
+
+    let initiative = if let Some(val) = c.initiative {
+        val.to_string()
+    } else {
+        "Not set yet".to_string()
+    };
+    lines.push(("Initiative".to_string(), initiative));
+    lines.push(("Name".to_string(), c.name.clone()));
+
+    if let Some(hp) = c.hit_points {
+        let mut hp_str = hp.to_string();
+        if app.increasing_or_decreasing_health {
+            hp_str.push_str(&format!(" ({})", app.health_change));
+        }
+        lines.push(("HP".to_string(), hp_str));
+    }
+    if let Some(ac) = c.armor_class {
+        lines.push(("AC".to_string(), ac.to_string()));
+    }
+    if let Some(speed) = &c.speed {
+        lines.push(("Speed".to_string(), format!("{}", speed)));
+    }
+    if let Some(size) = &c.size {
+        lines.push(("Size".to_string(), size.clone()));
+    }
+    if let Some(val) = c.strength {
+        lines.push(("Strength".to_string(), val.to_string()));
+    }
+    if let Some(val) = c.dexterity {
+        lines.push(("Dexterity".to_string(), val.to_string()));
+    }
+    if let Some(val) = c.constitution {
+        lines.push(("Constitution".to_string(), val.to_string()));
+    }
+    if let Some(val) = c.intelligence {
+        lines.push(("Intelligence".to_string(), val.to_string()));
+    }
+    if let Some(val) = c.wisdom {
+        lines.push(("Wisdom".to_string(), val.to_string()));
+    }
+    if let Some(val) = c.charisma {
+        lines.push(("Charisma".to_string(), val.to_string()));
+    }
+    if let Some(val) = c.strength_save {
+        lines.push(("Strength Save".to_string(), val.to_string()));
+    }
+    if let Some(val) = c.dexterity_save {
+        lines.push(("Dexterity Save".to_string(), val.to_string()));
+    }
+    if let Some(val) = c.constitution_save {
+        lines.push(("Constitution Save".to_string(), val.to_string()));
+    }
+    if let Some(val) = c.intelligence_save {
+        lines.push(("Intelligence Save".to_string(), val.to_string()));
+    }
+    if let Some(val) = c.wisdom_save {
+        lines.push(("Wisdom Save".to_string(), val.to_string()));
+    }
+    if let Some(val) = c.charisma_save {
+        lines.push(("Charisma Save".to_string(), val.to_string()));
+    }
+    if let Some(skills) = &c.skills {
+        lines.push(("Skills".to_string(), skills.to_string()));
+    }
+    if let Some(val) = &c.damage_vulnerabilities {
+        let s = val.to_string();
+        if !s.is_empty() {
+            lines.push(("Damage Vulnerabilities".to_string(), s));
+        }
+    }
+    if let Some(val) = &c.damage_resistances {
+        let s = val.to_string();
+        if !s.is_empty() {
+            lines.push(("Damage Resistance".to_string(), s));
+        }
+    }
+    if let Some(val) = &c.damage_immunities {
+        let s = val.to_string();
+        if !s.is_empty() {
+            lines.push(("Damage Immunities".to_string(), s));
+        }
+    }
+    if let Some(val) = &c.condition_immunities {
+        let s = val.to_string();
+        if !s.is_empty() {
+            lines.push(("Condition Immunities".to_string(), s));
+        }
+    }
+    if let Some(val) = &c.senses {
+        let s = val.to_string();
+        if !s.is_empty() {
+            lines.push(("Senses".to_string(), s));
+        }
+    }
+    if let Some(val) = &c.languages {
+        let s = val.to_string();
+        if !s.is_empty() {
+            lines.push(("Languages".to_string(), s));
+        }
+    }
+    if let Some(val) = &c.challenge_rating {
+        let s = val.to_string();
+        if !s.is_empty() {
+            lines.push(("Challenge Rating".to_string(), s));
+        }
+    }
+    if let Some(actions) = &c.actions {
+        lines.push((
+            "Actions".to_string(),
+            actions
+                .iter()
+                .map(|a| a.to_string())
+                .collect::<Vec<_>>()
+                .join("\n"),
+        ));
+    }
+    if let Some(legendary_actions) = &c.legendary_actions {
+        lines.push((
+            "Legendary Actions".to_string(),
+            legendary_actions
+                .iter()
+                .map(|a| a.to_string())
+                .collect::<Vec<_>>()
+                .join("\n"),
+        ));
+    }
+    if let Some(reactions) = &c.reactions {
+        lines.push((
+            "Reactions".to_string(),
+            reactions
+                .iter()
+                .map(|a| a.to_string())
+                .collect::<Vec<_>>()
+                .join("\n"),
+        ));
+    }
+    if let Some(special_abilities) = &c.special_abilities {
+        lines.push((
+            "Special Abilities".to_string(),
+            special_abilities
+                .iter()
+                .map(|s| s.to_string())
+                .collect::<Vec<_>>()
+                .join("\n"),
+        ));
+    }
+
+    lines
 }
 
 const fn alternate_colors(i: usize) -> Color {
