@@ -42,6 +42,7 @@ const INCREASE_HEALTH_KEY: char = 'l';
 const SEARCH_FOR_NEW_CREATURE_KEY: char = 's';
 const INSERT_NEW_PLAYER_KEY: char = 'c';
 const DELETE_CREATURE_KEY: char = 'd';
+const DUPLICATE_CREATURE_KEY: char = 'x';
 
 pub struct App {
     creature_list: CreatureList,
@@ -118,8 +119,21 @@ impl App {
                     self.show_initiative_popup = true;
                 }
             }
+            KeyCode::Char(DUPLICATE_CREATURE_KEY) => self.duplicate_creature(),
             _ => {}
         }
+    }
+
+    fn duplicate_creature(&mut self) {
+        if let Some(i) = self.creature_list.state.selected() {
+            if let Some(mut creature) = self.creature_list.items.get(i).cloned() {
+                let initiative_modifier: i64 = (creature.dexterity.unwrap_or(0) - 10) / 2;
+                creature.initiative = Some(rand::random_range(1..21) + initiative_modifier);
+                self.creature_list.items.insert(i + 1, creature);
+                self.creature_list.state.select(Some(i + 1));
+            }
+        }
+        self.creature_list.sort_creature_list();
     }
 
     fn handle_initiative_input(&mut self, key: &KeyEvent) {

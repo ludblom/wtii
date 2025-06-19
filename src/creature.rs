@@ -22,7 +22,7 @@ pub struct Reaction {
     pub desc: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Speed {
     pub walk: Option<i64>,
     pub fly: Option<i64>,
@@ -30,14 +30,14 @@ pub struct Speed {
     pub burrow: Option<i64>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Skills {
     pub athletics: Option<i64>,
     pub perception: Option<i64>,
     pub stealth: Option<i64>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Action {
     pub name: String,
     pub desc: String,
@@ -45,7 +45,7 @@ pub struct Action {
     pub damage_dice: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct SpecialAbility {
     pub name: String,
     pub desc: String,
@@ -96,7 +96,7 @@ pub struct ApiCreatureSearchItem {
     pub document_license_url: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, Clone)]
 pub struct CreatureItem {
     pub name: String,
     pub desc: Option<String>,
@@ -138,7 +138,7 @@ pub struct CreatureItem {
     pub special_abilities: Option<Vec<SpecialAbility>>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Attack {
     pub name: String,
     pub desc: String,
