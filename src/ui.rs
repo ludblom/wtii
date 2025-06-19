@@ -50,6 +50,8 @@ pub struct App {
     show_initiative_popup: bool,
     initiative_input: Input,
     creature_search_input: String,
+    creature_search_result: Vec<ApiCreatureSearchItem>,
+    creature_search_selected: Option<usize>,
 }
 
 impl Default for App {
@@ -61,28 +63,30 @@ impl Default for App {
             show_initiative_popup: false,
             initiative_input: Input::default(),
             creature_search_input: String::default(),
+            creature_search_result: Vec::new(),
+            creature_search_selected: None,
         }
     }
 }
 
 impl App {
-    pub fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
+    pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
         while !self.should_exit {
             terminal.draw(|frame| frame.render_widget(&mut self, frame.area()))?;
             if let Event::Key(key) = event::read()? {
-                self.handle_key(key);
+                self.handle_key(key).await;
             };
         }
         Ok(())
     }
 
-    fn handle_key(&mut self, key: KeyEvent) {
+    async fn handle_key(&mut self, key: KeyEvent) {
         if key.kind != KeyEventKind::Press {
             return;
         }
 
         if self.show_creature_search_popup {
-            self.handle_creature_search_input(&key);
+            self.handle_creature_search_input(&key).await;
             return;
         }
 
@@ -102,7 +106,10 @@ impl App {
             KeyCode::Char(MOVE_UP_KEY) | KeyCode::Up => self.select_previous(),
             KeyCode::Char(LOWER_HEALTH_KEY) | KeyCode::Left => self.lower_health(),
             KeyCode::Char(INCREASE_HEALTH_KEY) | KeyCode::Right => self.increase_health(),
-            KeyCode::Char(SEARCH_FOR_NEW_CREATURE_KEY) => self.show_creature_search_popup = true,
+            KeyCode::Char(SEARCH_FOR_NEW_CREATURE_KEY) => {
+                self.creature_search_selected = None;
+                self.show_creature_search_popup = true;
+            }
             KeyCode::Char(INSERT_NEW_PLAYER_KEY) => self.insert_new(),
             KeyCode::Char(DELETE_CREATURE_KEY) => self.delete_creature(),
             KeyCode::Char(NEW_ENCOUNTER_KEY) => self.new_encounter(),
@@ -137,32 +144,69 @@ impl App {
         }
     }
 
-    fn handle_creature_search_input(&mut self, key: &KeyEvent) {
+    async fn handle_creature_search_input(&mut self, key: &KeyEvent) {
         match key.code {
+            KeyCode::Tab => {
+                if !self.creature_search_result.is_empty() {
+                    if self.creature_search_selected.is_some() {
+                        self.creature_search_selected = None;
+                    } else {
+                        self.creature_search_selected = Some(0);
+                    }
+                } else {
+                    self.creature_search_selected = None;
+                }
+            }
             KeyCode::Esc => {
                 self.show_creature_search_popup = false;
-            }
-            KeyCode::Char(c) => {
-                self.creature_search_input.push(c);
             }
             KeyCode::Backspace => {
                 self.creature_search_input.pop();
             }
             KeyCode::Enter => {
+                if let Some(selected) = self.creature_search_selected {
+                    if let Some(selected_creature) = self.creature_search_result.get(selected) {
+                        self.creature_list
+                            .add_new_creature(CreatureItem::new_npc(selected_creature));
+                        self.show_creature_search_popup = false;
+                    }
+                }
                 let input = self.creature_search_input.clone();
                 let api = MonsterSearch;
 
-                tokio::spawn(async move {
-                    match search_for_creature(&api, &input).await {
-                        // TODO: Take the result and present it
-                        Ok(results) => {
-                            println!("Found {} matches!", results.len());
-                        }
-                        Err(e) => {
-                            println!("Nothing found!!! Error: {}", e);
+                let result = search_for_creature(&api, &input).await;
+
+                match result {
+                    Ok(results) => {
+                        self.creature_search_result = results;
+                        self.creature_search_selected = if self.creature_search_result.is_empty() {
+                            None
+                        } else {
+                            Some(0)
+                        };
+                    }
+                    Err(_) => {
+                        self.creature_search_result.clear();
+                        self.creature_search_selected = None;
+                    }
+                }
+            }
+            KeyCode::Char(c) => {
+                if c == MOVE_DOWN_KEY && self.creature_search_selected.is_some() {
+                    if let Some(selected) = self.creature_search_selected {
+                        if selected + 1 < self.creature_search_result.len() {
+                            self.creature_search_selected = Some(selected + 1);
                         }
                     }
-                });
+                } else if c == MOVE_UP_KEY && self.creature_search_selected.is_some() {
+                    if let Some(selected) = self.creature_search_selected {
+                        if selected > 0 {
+                            self.creature_search_selected = Some(selected - 1);
+                        }
+                    }
+                } else if self.creature_search_selected.is_none() {
+                    self.creature_search_input.push(c);
+                }
             }
             _ => {}
         }
@@ -310,20 +354,42 @@ impl App {
     }
 
     fn render_creature_search_popup(&self, area: Rect, buf: &mut Buffer) {
+        // Draw the popup background and border
         Block::bordered()
             .title("Creature Search")
             .borders(Borders::ALL)
             .bg(NORMAL_ROW_BG)
             .render(area, buf);
+
+        // Split the popup into input and results areas
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
             .margin(1)
             .split(area);
+
+        // Render the search input
         let input = Paragraph::new(Text::from(self.creature_search_input.as_str()))
             .block(Block::default().borders(Borders::ALL).title("Search"));
-
         input.render(chunks[0], buf);
+
+        // Prepare the results as a list of items
+        let results: Vec<ListItem> = self
+            .creature_search_result
+            .iter()
+            .map(|item| ListItem::new(item.name.clone()))
+            .collect();
+
+        // Set up the selection state
+        let mut state = ratatui::widgets::ListState::default();
+        state.select(self.creature_search_selected);
+
+        // Render the results list with highlight for the selected row
+        let list = List::new(results)
+            .block(Block::default().borders(Borders::ALL).title("Results"))
+            .highlight_style(SELECTED_STYLE);
+
+        StatefulWidget::render(list, chunks[1], buf, &mut state);
     }
 
     fn popup_search_area(area: Rect) -> Rect {
