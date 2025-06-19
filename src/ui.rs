@@ -53,6 +53,8 @@ pub struct App {
     creature_search_input: String,
     creature_search_result: Vec<ApiCreatureSearchItem>,
     creature_search_selected: Option<usize>,
+    increasing_or_decreasing_health: bool,
+    health_change: i64,
 }
 
 impl Default for App {
@@ -66,6 +68,8 @@ impl Default for App {
             creature_search_input: String::default(),
             creature_search_result: Vec::new(),
             creature_search_selected: None,
+            increasing_or_decreasing_health: false,
+            health_change: 0,
         }
     }
 }
@@ -235,6 +239,8 @@ impl App {
     }
 
     fn select_next(&mut self) {
+        self.health_change = 0;
+        self.increasing_or_decreasing_health = false;
         let creature_count: usize = self.creature_list.items.len();
 
         match self.creature_list.state.selected() {
@@ -256,6 +262,8 @@ impl App {
     }
 
     fn select_previous(&mut self) {
+        self.health_change = 0;
+        self.increasing_or_decreasing_health = false;
         let creature_count: usize = self.creature_list.items.len();
 
         match self.creature_list.state.selected() {
@@ -283,10 +291,12 @@ impl App {
     }
 
     fn lower_health(&mut self) {
+        self.increasing_or_decreasing_health = true;
         if let Some(i) = self.creature_list.state.selected() {
             if let Some(hp) = self.creature_list.items[i].hit_points.as_mut() {
                 if *hp > 0 {
                     *hp -= 1;
+                    self.health_change -= 1;
                 }
                 if *hp == 0 {
                     self.creature_list.items[i].status = Status::Dead;
@@ -296,10 +306,12 @@ impl App {
     }
 
     fn increase_health(&mut self) {
+        self.increasing_or_decreasing_health = true;
         if let Some(i) = self.creature_list.state.selected() {
             if let Some(hp) = self.creature_list.items[i].hit_points.as_mut() {
                 if *hp < u64::MAX {
                     *hp += 1;
+                    self.health_change += 1;
                 }
                 if *hp > 0 {
                     self.creature_list.items[i].status = Status::Alive;
@@ -477,7 +489,7 @@ impl App {
             let initiative_is_set: bool = self.creature_list.items[i].initiative.is_some();
             match self.creature_list.items[i].faction {
                 Faction::Npc => format!(
-                    " Initiative: {}\n Name: {}\n HP: {}\n AC: {}\n Description: {}",
+                    " Initiative: {}\n Name: {}\n HP: {} {}\n AC: {}\n Description: {}",
                     if initiative_is_set {
                         self.creature_list.items[i].initiative.unwrap().to_string()
                     } else {
@@ -485,6 +497,11 @@ impl App {
                     },
                     self.creature_list.items[i].name,
                     self.creature_list.items[i].hit_points.unwrap(),
+                    if self.increasing_or_decreasing_health {
+                        format!("({})", self.health_change)
+                    } else {
+                        String::new()
+                    },
                     self.creature_list.items[i].armor_class.unwrap(),
                     match &self.creature_list.items[i].desc {
                         Some(desc) => desc.to_string(),
