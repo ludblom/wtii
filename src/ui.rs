@@ -1,5 +1,5 @@
 use crate::api::{search_for_creature, MonsterSearch};
-use crate::creature::{Action, ApiCreatureSearchItem, Faction, Reaction, SpecialAbility};
+use crate::creature::{ApiCreatureSearchItem, Faction};
 use crate::creature::{CreatureItem, CreatureList, Status};
 use color_eyre::Result;
 use ratatui::layout::Direction;
