@@ -55,6 +55,7 @@ pub struct App {
     creature_search_selected: Option<usize>,
     increasing_or_decreasing_health: bool,
     health_change: i64,
+    creature_info_scroll: u16,
 }
 
 impl Default for App {
@@ -70,6 +71,7 @@ impl Default for App {
             creature_search_selected: None,
             increasing_or_decreasing_health: false,
             health_change: 0,
+            creature_info_scroll: 0,
         }
     }
 }
@@ -124,6 +126,12 @@ impl App {
                 }
             }
             KeyCode::Char(DUPLICATE_CREATURE_KEY) => self.duplicate_creature(),
+            KeyCode::PageDown => self.creature_info_scroll += 1,
+            KeyCode::PageUp => {
+                if self.creature_info_scroll > 0 {
+                    self.creature_info_scroll -= 1;
+                }
+            }
             _ => {}
         }
     }
@@ -531,6 +539,7 @@ impl App {
             .block(block)
             .fg(TEXT_FG_COLOR)
             .wrap(Wrap { trim: false })
+            .scroll((self.creature_info_scroll, 0))
             .render(area, buf);
     }
 }
