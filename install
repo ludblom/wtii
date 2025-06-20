@@ -1,0 +1,16 @@
+#!/bin/bash
+set -e
+
+if ! command -v cargo &> /dev/null; then
+    echo "Rust and Cargo are required. Install from https://rustup.rs/"
+    exit 1
+fi
+
+cargo build --release
+
+BIN=target/release/wtii
+DEST=~/.local/bin
+mkdir -p "$DEST"
+cp "$BIN" "$DEST"
+
+echo "Installed wtii to $DEST"
