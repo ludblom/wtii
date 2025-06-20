@@ -299,31 +299,27 @@ impl App {
     }
 
     fn lower_health(&mut self) {
-        self.increasing_or_decreasing_health = true;
         if let Some(i) = self.creature_list.state.selected() {
-            if let Some(hp) = self.creature_list.items[i].hit_points.as_mut() {
-                if *hp > 0 {
-                    *hp -= 1;
-                    self.health_change -= 1;
-                }
-                if *hp == 0 {
-                    self.creature_list.items[i].status = Status::Dead;
-                }
+            if self.creature_list.items[i].hit_points > 0 {
+                self.increasing_or_decreasing_health = true;
+                self.creature_list.items[i].hit_points -= 1;
+                self.health_change -= 1;
+            }
+            if self.creature_list.items[i].hit_points == 0 {
+                self.creature_list.items[i].status = Status::Dead;
             }
         }
     }
 
     fn increase_health(&mut self) {
-        self.increasing_or_decreasing_health = true;
         if let Some(i) = self.creature_list.state.selected() {
-            if let Some(hp) = self.creature_list.items[i].hit_points.as_mut() {
-                if *hp < u64::MAX {
-                    *hp += 1;
-                    self.health_change += 1;
-                }
-                if *hp > 0 {
-                    self.creature_list.items[i].status = Status::Alive;
-                }
+            if self.creature_list.items[i].hit_points < self.creature_list.items[i].max_hit_points {
+                self.increasing_or_decreasing_health = true;
+                self.creature_list.items[i].hit_points += 1;
+                self.health_change += 1;
+            }
+            if self.creature_list.items[i].hit_points > 0 {
+                self.creature_list.items[i].status = Status::Alive;
             }
         }
     }
@@ -513,10 +509,7 @@ impl App {
                         "Not set yet".to_string()
                     },
                     self.creature_list.items[i].name,
-                    match &self.creature_list.items[i].hit_points {
-                        Some(hit_points) => hit_points.to_string(),
-                        None => "".to_string(),
-                    },
+                    self.creature_list.items[i].hit_points.to_string(),
                     match &self.creature_list.items[i].desc {
                         Some(desc) => desc.to_string(),
                         None => "".to_string(),
@@ -556,13 +549,12 @@ fn npc_info(app: &App, i: usize) -> Vec<(String, String)> {
     lines.push(("Initiative".to_string(), initiative));
     lines.push(("Name".to_string(), c.name.clone()));
 
-    if let Some(hp) = c.hit_points {
-        let mut hp_str = hp.to_string();
-        if app.increasing_or_decreasing_health {
-            hp_str.push_str(&format!(" ({})", app.health_change));
-        }
-        lines.push(("HP".to_string(), hp_str));
+    let mut hp_str = c.hit_points.to_string();
+    if app.increasing_or_decreasing_health {
+        hp_str.push_str(&format!(" ({})", app.health_change));
     }
+    lines.push(("HP".to_string(), hp_str));
+
     if let Some(ac) = c.armor_class {
         lines.push(("AC".to_string(), ac.to_string()));
     }
