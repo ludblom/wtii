@@ -6,7 +6,8 @@ use ratatui::{
     widgets::{ListItem, ListState},
 };
 use serde::Deserialize;
-use std::fmt;
+use std::{fmt, fs};
+use yaml_rust2::YamlLoader;
 
 const COMPLETED_TEXT_FG_COLOR: Color = GREEN.c500;
 const DEAD_TEXT_FG_COLOR: Color = RED.c500;
@@ -382,15 +383,58 @@ impl Default for ApiCreatureSearchItem {
     }
 }
 
+#[cfg(unix)]
+fn get_config_file_location() -> Option<String> {
+    let home = match std::env::var("HOME") {
+        Ok(home) => home,
+        Err(_) => return None,
+    };
+    Some(format!("{}/.config/wtii/default.yml", home))
+}
+
+#[cfg(windows)]
+fn get_config_file_location() -> Option<String> {
+    let userprofile = match std::env::var("USERPROFILE") {
+        Ok(userprofile) => userprofile,
+        Err(_) => return None,
+    };
+    Some(format!("{}\\Documents\\wtii\\default.yml", userprofile))
+}
+
 impl Default for CreatureList {
     fn default() -> Self {
-        CreatureList::from_iter([
-            // Status, Name, Description, HP, Faction, Armor Class
-            // TODO: Load from a config file
-            ("Samson", Some("A real bastard.")),
-            ("Thaurun", Some("Very nice guy!")),
-            ("Borbur", Some("A king.")),
-        ])
+        let empty_creature_list = Self {
+            items: Vec::new(),
+            state: ListState::default(),
+        };
+
+        let config_path: String = match get_config_file_location() {
+            Some(path) => path,
+            None => return empty_creature_list,
+        };
+
+        let yaml_str = match fs::read_to_string(config_path) {
+            Ok(yaml_str) => yaml_str,
+            Err(_) => return empty_creature_list,
+        };
+
+        let docs = match YamlLoader::load_from_str(&yaml_str) {
+            Ok(docs) => docs,
+            Err(_) => return empty_creature_list,
+        };
+
+        let doc = &docs[0];
+        let mut items = Vec::new();
+
+        if let Some(players) = doc["players"].as_vec() {
+            for player in players {
+                let name = player["name"].as_str().unwrap_or("Unknown");
+                let desc = player["desc"].as_str();
+                items.push(CreatureItem::new_player(name, desc));
+            }
+        }
+        let state = ListState::default();
+        Self { items, state }
     }
 }
 
@@ -407,16 +451,5 @@ impl From<&CreatureItem> for ListItem<'_> {
             Status::Dead => Line::styled(format!(" X {}", value.name), DEAD_TEXT_FG_COLOR),
         };
         ListItem::new(line)
-    }
-}
-
-impl FromIterator<(&'static str, Option<&'static str>)> for CreatureList {
-    fn from_iter<I: IntoIterator<Item = (&'static str, Option<&'static str>)>>(iter: I) -> Self {
-        let items = iter
-            .into_iter()
-            .map(|(name, desc)| CreatureItem::new_player(name, desc))
-            .collect();
-        let state = ListState::default();
-        Self { items, state }
     }
 }
