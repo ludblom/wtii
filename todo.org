@@ -1,7 +1,0 @@
-#+title: Todo
-
-* Things to add [1/2]
-** [ ] Player config
-** [X] Implement API search
-** [ ] Prettify NPC info and allow to scroll. Maybe also change placement for easy access
-`curl "https://api.open5e.com/v1/monsters/?search=beholder"`
