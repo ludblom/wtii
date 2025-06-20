@@ -20,6 +20,7 @@ use ratatui::{
     },
     DefaultTerminal,
 };
+use std::cmp::PartialEq;
 use tui_input::backend::crossterm::EventHandler;
 use tui_input::Input;
 
@@ -43,6 +44,12 @@ const SEARCH_FOR_NEW_CREATURE_KEY: char = 's';
 const INSERT_NEW_PLAYER_KEY: char = 'c';
 const DELETE_CREATURE_KEY: char = 'd';
 const DUPLICATE_CREATURE_KEY: char = 'x';
+
+#[derive(PartialEq)]
+enum TextFormatting {
+    Line,
+    NewLine,
+}
 
 pub struct App {
     creature_list: CreatureList,
@@ -497,7 +504,13 @@ impl App {
                     let lines = npc_info(self, i);
                     lines
                         .into_iter()
-                        .map(|(k, v)| format!("{}: {}", k, v))
+                        .map(|(k, v, f)| {
+                            if f == TextFormatting::Line {
+                                format!("{}: {}", k, v)
+                            } else {
+                                format!("\n==={}===\n{}", k, v)
+                            }
+                        })
                         .collect::<Vec<_>>()
                         .join("\n")
                 }
@@ -537,7 +550,7 @@ impl App {
     }
 }
 
-fn npc_info(app: &App, i: usize) -> Vec<(String, String)> {
+fn npc_info(app: &App, i: usize) -> Vec<(String, String, TextFormatting)> {
     let c = &app.creature_list.items[i];
     let mut lines = Vec::new();
 
@@ -546,103 +559,163 @@ fn npc_info(app: &App, i: usize) -> Vec<(String, String)> {
     } else {
         "Not set yet".to_string()
     };
-    lines.push(("Initiative".to_string(), initiative));
-    lines.push(("Name".to_string(), c.name.clone()));
+    lines.push(("Initiative".to_string(), initiative, TextFormatting::Line));
+    lines.push(("Name".to_string(), c.name.clone(), TextFormatting::Line));
 
     let mut hp_str = c.hit_points.to_string();
     if app.increasing_or_decreasing_health {
         hp_str.push_str(&format!(" ({})", app.health_change));
     }
-    lines.push(("HP".to_string(), hp_str));
+    lines.push(("HP".to_string(), hp_str, TextFormatting::Line));
 
     if let Some(ac) = c.armor_class {
-        lines.push(("AC".to_string(), ac.to_string()));
-    }
-    if let Some(speed) = &c.speed {
-        lines.push(("Speed".to_string(), format!("{}", speed)));
-    }
-    if let Some(size) = &c.size {
-        lines.push(("Size".to_string(), size.clone()));
+        lines.push(("AC".to_string(), ac.to_string(), TextFormatting::Line));
     }
     if let Some(val) = c.strength {
-        lines.push(("Strength".to_string(), val.to_string()));
-    }
-    if let Some(val) = c.dexterity {
-        lines.push(("Dexterity".to_string(), val.to_string()));
-    }
-    if let Some(val) = c.constitution {
-        lines.push(("Constitution".to_string(), val.to_string()));
-    }
-    if let Some(val) = c.intelligence {
-        lines.push(("Intelligence".to_string(), val.to_string()));
-    }
-    if let Some(val) = c.wisdom {
-        lines.push(("Wisdom".to_string(), val.to_string()));
-    }
-    if let Some(val) = c.charisma {
-        lines.push(("Charisma".to_string(), val.to_string()));
+        lines.push((
+            "Strength".to_string(),
+            val.to_string(),
+            TextFormatting::Line,
+        ));
     }
     if let Some(val) = c.strength_save {
-        lines.push(("Strength Save".to_string(), val.to_string()));
+        lines.push((
+            "Strength Save".to_string(),
+            val.to_string(),
+            TextFormatting::Line,
+        ));
+    }
+    if let Some(val) = c.dexterity {
+        lines.push((
+            "Dexterity".to_string(),
+            val.to_string(),
+            TextFormatting::Line,
+        ));
     }
     if let Some(val) = c.dexterity_save {
-        lines.push(("Dexterity Save".to_string(), val.to_string()));
+        lines.push((
+            "Dexterity Save".to_string(),
+            val.to_string(),
+            TextFormatting::Line,
+        ));
+    }
+    if let Some(val) = c.constitution {
+        lines.push((
+            "Constitution".to_string(),
+            val.to_string(),
+            TextFormatting::Line,
+        ));
     }
     if let Some(val) = c.constitution_save {
-        lines.push(("Constitution Save".to_string(), val.to_string()));
+        lines.push((
+            "Constitution Save".to_string(),
+            val.to_string(),
+            TextFormatting::Line,
+        ));
+    }
+    if let Some(val) = c.intelligence {
+        lines.push((
+            "Intelligence".to_string(),
+            val.to_string(),
+            TextFormatting::Line,
+        ));
     }
     if let Some(val) = c.intelligence_save {
-        lines.push(("Intelligence Save".to_string(), val.to_string()));
+        lines.push((
+            "Intelligence Save".to_string(),
+            val.to_string(),
+            TextFormatting::Line,
+        ));
+    }
+    if let Some(val) = c.wisdom {
+        lines.push(("Wisdom".to_string(), val.to_string(), TextFormatting::Line));
     }
     if let Some(val) = c.wisdom_save {
-        lines.push(("Wisdom Save".to_string(), val.to_string()));
+        lines.push((
+            "Wisdom Save".to_string(),
+            val.to_string(),
+            TextFormatting::Line,
+        ));
+    }
+    if let Some(val) = c.charisma {
+        lines.push((
+            "Charisma".to_string(),
+            val.to_string(),
+            TextFormatting::Line,
+        ));
     }
     if let Some(val) = c.charisma_save {
-        lines.push(("Charisma Save".to_string(), val.to_string()));
+        lines.push((
+            "Charisma Save".to_string(),
+            val.to_string(),
+            TextFormatting::Line,
+        ));
+    }
+    if let Some(speed) = &c.speed {
+        lines.push((
+            "Speed".to_string(),
+            format!("{}", speed),
+            TextFormatting::NewLine,
+        ));
+    }
+    if let Some(size) = &c.size {
+        lines.push(("Size".to_string(), size.clone(), TextFormatting::NewLine));
     }
     if let Some(skills) = &c.skills {
-        lines.push(("Skills".to_string(), skills.to_string()));
+        lines.push((
+            "Skills".to_string(),
+            skills.to_string(),
+            TextFormatting::NewLine,
+        ));
     }
     if let Some(val) = &c.damage_vulnerabilities {
         let s = val.to_string();
         if !s.is_empty() {
-            lines.push(("Damage Vulnerabilities".to_string(), s));
+            lines.push((
+                "Damage Vulnerabilities".to_string(),
+                s,
+                TextFormatting::NewLine,
+            ));
         }
     }
     if let Some(val) = &c.damage_resistances {
         let s = val.to_string();
         if !s.is_empty() {
-            lines.push(("Damage Resistance".to_string(), s));
+            lines.push(("Damage Resistance".to_string(), s, TextFormatting::NewLine));
         }
     }
     if let Some(val) = &c.damage_immunities {
         let s = val.to_string();
         if !s.is_empty() {
-            lines.push(("Damage Immunities".to_string(), s));
+            lines.push(("Damage Immunities".to_string(), s, TextFormatting::NewLine));
         }
     }
     if let Some(val) = &c.condition_immunities {
         let s = val.to_string();
         if !s.is_empty() {
-            lines.push(("Condition Immunities".to_string(), s));
+            lines.push((
+                "Condition Immunities".to_string(),
+                s,
+                TextFormatting::NewLine,
+            ));
         }
     }
     if let Some(val) = &c.senses {
         let s = val.to_string();
         if !s.is_empty() {
-            lines.push(("Senses".to_string(), s));
+            lines.push(("Senses".to_string(), s, TextFormatting::NewLine));
         }
     }
     if let Some(val) = &c.languages {
         let s = val.to_string();
         if !s.is_empty() {
-            lines.push(("Languages".to_string(), s));
+            lines.push(("Languages".to_string(), s, TextFormatting::NewLine));
         }
     }
     if let Some(val) = &c.challenge_rating {
         let s = val.to_string();
         if !s.is_empty() {
-            lines.push(("Challenge Rating".to_string(), s));
+            lines.push(("Challenge Rating".to_string(), s, TextFormatting::NewLine));
         }
     }
     if let Some(actions) = &c.actions {
@@ -652,7 +725,8 @@ fn npc_info(app: &App, i: usize) -> Vec<(String, String)> {
                 .iter()
                 .map(|a| a.to_string())
                 .collect::<Vec<_>>()
-                .join("\n"),
+                .join("\n--------------------------------\n"),
+            TextFormatting::NewLine,
         ));
     }
     if let Some(legendary_actions) = &c.legendary_actions {
@@ -662,7 +736,8 @@ fn npc_info(app: &App, i: usize) -> Vec<(String, String)> {
                 .iter()
                 .map(|a| a.to_string())
                 .collect::<Vec<_>>()
-                .join("\n"),
+                .join("\n--------------------------------\n"),
+            TextFormatting::NewLine,
         ));
     }
     if let Some(reactions) = &c.reactions {
@@ -672,7 +747,8 @@ fn npc_info(app: &App, i: usize) -> Vec<(String, String)> {
                 .iter()
                 .map(|a| a.to_string())
                 .collect::<Vec<_>>()
-                .join("\n"),
+                .join("\n--------------------------------\n"),
+            TextFormatting::NewLine,
         ));
     }
     if let Some(special_abilities) = &c.special_abilities {
@@ -682,10 +758,10 @@ fn npc_info(app: &App, i: usize) -> Vec<(String, String)> {
                 .iter()
                 .map(|s| s.to_string())
                 .collect::<Vec<_>>()
-                .join("\n"),
+                .join("\n--------------------------------\n"),
+            TextFormatting::NewLine,
         ));
     }
-
     lines
 }
 
