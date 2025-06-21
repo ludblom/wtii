@@ -19,3 +19,7 @@ These players will always be loaded as default, it is recommended to have the wh
 ## Linux and MacOS
 1. Install Rust and Cargo from https://rustup.rs/
 2. Run `./install`, the binary will be placed in `~/.local/bin/wtii`
+
+# Issues
+1. When searching for creatures, the search is not handled asynchronously. This makes the UI freeze and is a very bad
+user experience. Want to then add a small loading box or something so that the user know a search is in progress.
