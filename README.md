@@ -15,7 +15,32 @@ players:
 
 These players will always be loaded as default, it is recommended to have the whole party here.
 
+# Keybindings
+The keybindings are made to be vim-like. When you are operating in different views the same keys can act differently.
+
+### Main view
+
+- j - Move down
+- k - Move up
+- h - Decrease HP
+- l - Increase HP
+- d - Delete character
+- e - Create a new default view
+- x - Duplicate creature
+- i - Set initiative
+- s - Search for creature (opens up `Search view`)
+- PgUp - Scroll "Creature Info" up
+- PgDn - Scroll "Creature Info" down
+
+### Search view
+
+- Tab - Move between search field and select field
+
 # Installation
 ## Linux and MacOS
 1. Install Rust and Cargo from https://rustup.rs/
 2. Run `./install`, the binary will be placed in `~/.local/bin/wtii`
+
+# Issues
+1. When searching for creatures, the search is not handled asynchronously. This makes the UI freeze and is a very bad
+user experience. Want to then add a small loading box or something so that the user know a search is in progress.
