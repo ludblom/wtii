@@ -1,4 +1,4 @@
-use crate::api::{search_for_creature, MonsterSearch};
+use crate::api::{search_for_creature, ApiError, MonsterSearch};
 use crate::creature::{ApiCreatureSearchItem, Faction};
 use crate::creature::{CreatureItem, CreatureList, Status};
 use color_eyre::Result;
@@ -21,6 +21,8 @@ use ratatui::{
     DefaultTerminal,
 };
 use std::cmp::PartialEq;
+use std::time::Duration;
+use tokio::sync::mpsc;
 use tui_input::backend::crossterm::EventHandler;
 use tui_input::Input;
 
@@ -60,6 +62,9 @@ pub struct App {
     creature_search_input: String,
     creature_search_result: Vec<ApiCreatureSearchItem>,
     creature_search_selected: Option<usize>,
+    creature_search_loading: bool,
+    creature_search_result_rx:
+        Option<mpsc::UnboundedReceiver<Result<Vec<ApiCreatureSearchItem>, ApiError>>>,
     increasing_or_decreasing_health: bool,
     health_change: i64,
     creature_info_scroll: u16,
@@ -76,6 +81,8 @@ impl Default for App {
             creature_search_input: String::default(),
             creature_search_result: Vec::new(),
             creature_search_selected: None,
+            creature_search_loading: false,
+            creature_search_result_rx: None,
             increasing_or_decreasing_health: false,
             health_change: 0,
             creature_info_scroll: 0,
@@ -87,9 +94,35 @@ impl App {
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
         while !self.should_exit {
             terminal.draw(|frame| frame.render_widget(&mut self, frame.area()))?;
-            if let Event::Key(key) = event::read()? {
-                self.handle_key(key).await;
-            };
+
+            // TODO: This is a workaround, use async event streaming instead
+            if event::poll(Duration::from_millis(100))? {
+                if let Event::Key(key) = event::read()? {
+                    self.handle_key(key).await;
+                };
+            }
+
+            if let Some(rx) = &mut self.creature_search_result_rx {
+                if let Ok(result) = rx.try_recv() {
+                    self.creature_search_loading = false;
+                    self.creature_search_result_rx = None;
+                    match result {
+                        Ok(results) => {
+                            self.creature_search_result = results;
+                            self.creature_search_selected =
+                                if self.creature_search_result.is_empty() {
+                                    None
+                                } else {
+                                    Some(0)
+                                };
+                        }
+                        Err(_) => {
+                            self.creature_search_result.clear();
+                            self.creature_search_selected = None;
+                        }
+                    }
+                }
+            }
         }
         Ok(())
     }
@@ -205,25 +238,16 @@ impl App {
                         return;
                     }
                 }
+
+                self.creature_search_loading = true;
+                let (tx, rx) = mpsc::unbounded_channel();
+                self.creature_search_result_rx = Some(rx);
                 let input = self.creature_search_input.clone();
-                let api = MonsterSearch;
-
-                let result = search_for_creature(&api, &input).await;
-
-                match result {
-                    Ok(results) => {
-                        self.creature_search_result = results;
-                        self.creature_search_selected = if self.creature_search_result.is_empty() {
-                            None
-                        } else {
-                            Some(0)
-                        };
-                    }
-                    Err(_) => {
-                        self.creature_search_result.clear();
-                        self.creature_search_selected = None;
-                    }
-                }
+                tokio::spawn(async move {
+                    let api = MonsterSearch;
+                    let result = search_for_creature(&api, &input).await;
+                    let _ = tx.send(result);
+                });
             }
             KeyCode::Char(c) => {
                 if c == MOVE_DOWN_KEY && self.creature_search_selected.is_some() {
@@ -427,6 +451,13 @@ impl App {
         let list = List::new(results)
             .block(Block::default().borders(Borders::ALL).title("Results"))
             .highlight_style(SELECTED_STYLE);
+
+        // Render the loading state if applicable
+        if self.creature_search_loading {
+            // Render a loading spinner or text near the input
+            let loading = Paragraph::new("Loading...").block(Block::default());
+            loading.render(chunks[0], buf);
+        }
 
         StatefulWidget::render(list, chunks[1], buf, &mut state);
     }
