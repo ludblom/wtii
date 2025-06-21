@@ -202,6 +202,7 @@ impl App {
                         self.creature_list
                             .add_new_creature(CreatureItem::new_npc(selected_creature));
                         self.show_creature_search_popup = false;
+                        return;
                     }
                 }
                 let input = self.creature_search_input.clone();

@@ -123,7 +123,7 @@ mod tests {
     #[test]
     fn test_parse_json_response() {
         let data: String = load_mock_creature_json("single_creature_response.json");
-        let res = parse_json_response(data);
+        let res = parse_json_response(&*data);
         assert!(res.is_ok());
     }
 }
