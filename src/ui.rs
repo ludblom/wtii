@@ -70,7 +70,6 @@ pub struct App {
     increasing_or_decreasing_health: bool,
     health_change: i64,
     creature_info_scroll: u16,
-
     save_creature_viewing: Option<usize>,
 }
 
@@ -154,9 +153,9 @@ impl App {
         match key.code {
             KeyCode::Char(QUIT_APP_KEY) | KeyCode::Esc => self.should_exit = true,
             KeyCode::Char(UNSELECT_ALL_KEY) => self.select_none(),
-            KeyCode::Char(MOVE_DOWN_KEY) | KeyCode::Down => self.select_next(),
+            KeyCode::Char(MOVE_DOWN_KEY) => self.select_next(),
             KeyCode::Char(PEEK_DOWN_KEY) => self.peek_on_next(),
-            KeyCode::Char(MOVE_UP_KEY) | KeyCode::Up => self.select_previous(),
+            KeyCode::Char(MOVE_UP_KEY) => self.select_previous(),
             KeyCode::Char(PEEK_UP_KEY) => self.peek_on_previous(),
             KeyCode::Char(LOWER_HEALTH_KEY) | KeyCode::Left => self.lower_health(),
             KeyCode::Char(INCREASE_HEALTH_KEY) | KeyCode::Right => self.increase_health(),
@@ -173,8 +172,8 @@ impl App {
                 }
             }
             KeyCode::Char(DUPLICATE_CREATURE_KEY) => self.duplicate_creature(),
-            KeyCode::PageDown => self.creature_info_scroll += 1,
-            KeyCode::PageUp => {
+            KeyCode::Down => self.creature_info_scroll += 1,
+            KeyCode::Up => {
                 if self.creature_info_scroll > 0 {
                     self.creature_info_scroll -= 1;
                 }
@@ -632,7 +631,7 @@ fn npc_info(app: &App, i: usize) -> Vec<(String, String, TextFormatting)> {
     lines.push(("Name".to_string(), c.name.clone(), TextFormatting::Line));
 
     let mut hp_str = c.hit_points.to_string();
-    if app.increasing_or_decreasing_health {
+    if app.increasing_or_decreasing_health && app.save_creature_viewing.is_none() {
         hp_str.push_str(&format!(" ({})", app.health_change));
     }
     lines.push(("HP".to_string(), hp_str, TextFormatting::Line));

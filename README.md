@@ -9,7 +9,7 @@ If you want to have a default troop of players you can add a `default.yml` file
 in either `~/.config/wtii/` on UNIX or `Documents\wtii\` on Windows. Example of
 the config file:
 
-```
+```yaml
 ---
 players:
   - name: Player 1
@@ -38,8 +38,8 @@ views the same keys can act differently.
 - x - Duplicate creature
 - i - Set initiative
 - s - Search for creature (opens up `Search view`)
-- PgUp - Scroll "Creature Info" up
-- PgDn - Scroll "Creature Info" down
+- Up Arrow - Scroll "Creature Info" up
+- Down Arrow - Scroll "Creature Info" down
 - Esc|q - Quit app
 
 ### Search view
