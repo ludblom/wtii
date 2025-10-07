@@ -33,7 +33,8 @@ views the same keys can act differently.
 - K - Peek up
 - h - Decrease HP
 - l - Increase HP
-- d - Delete character
+- D - Delete character
+- d - Set or change creature description
 - e - Create a new default view
 - x - Duplicate creature
 - i - Set initiative

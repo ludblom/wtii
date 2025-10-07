@@ -281,7 +281,7 @@ impl CreatureItem {
             hit_dice: api_creature.hit_dice.clone(),
             armor_class: api_creature.armor_class,
             armor_desc: api_creature.armor_desc.clone(),
-            desc: api_creature.desc.clone(),
+            desc: None,
             speed: api_creature.speed.clone(),
             size: api_creature.size.clone(),
             strength: api_creature.strength,
@@ -440,16 +440,39 @@ impl Default for CreatureList {
 
 impl From<&CreatureItem> for ListItem<'_> {
     fn from(value: &CreatureItem) -> Self {
-        let line = match value.status {
-            Status::Alive => {
-                if value.initiative.is_some() {
-                    Line::styled(format!(" ✓ {}", value.name), COMPLETED_TEXT_FG_COLOR)
-                } else {
-                    Line::styled(format!(" ✓ {}", value.name), NO_INITIATIVE_STYLE)
+        if value.desc.is_some() {
+            let line = match value.status {
+                Status::Alive => {
+                    if value.initiative.is_some() {
+                        Line::styled(
+                            format!(" ✓ {} ({})", value.name, value.desc.as_ref().unwrap()),
+                            COMPLETED_TEXT_FG_COLOR,
+                        )
+                    } else {
+                        Line::styled(
+                            format!(" ✓ {} ({})", value.name, value.desc.as_ref().unwrap()),
+                            NO_INITIATIVE_STYLE,
+                        )
+                    }
                 }
-            }
-            Status::Dead => Line::styled(format!(" X {}", value.name), DEAD_TEXT_FG_COLOR),
-        };
-        ListItem::new(line)
+                Status::Dead => Line::styled(
+                    format!(" X {} ({})", value.name, value.desc.as_ref().unwrap()),
+                    DEAD_TEXT_FG_COLOR,
+                ),
+            };
+            ListItem::new(line)
+        } else {
+            let line = match value.status {
+                Status::Alive => {
+                    if value.initiative.is_some() {
+                        Line::styled(format!(" ✓ {}", value.name), COMPLETED_TEXT_FG_COLOR)
+                    } else {
+                        Line::styled(format!(" ✓ {}", value.name), NO_INITIATIVE_STYLE)
+                    }
+                }
+                Status::Dead => Line::styled(format!(" X {}", value.name), DEAD_TEXT_FG_COLOR),
+            };
+            ListItem::new(line)
+        }
     }
 }

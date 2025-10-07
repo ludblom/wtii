@@ -46,7 +46,8 @@ const LOWER_HEALTH_KEY: char = 'h';
 const INCREASE_HEALTH_KEY: char = 'l';
 const SEARCH_FOR_NEW_CREATURE_KEY: char = 's';
 const INSERT_NEW_PLAYER_KEY: char = 'c';
-const DELETE_CREATURE_KEY: char = 'd';
+const DELETE_CREATURE_KEY: char = 'D';
+const SET_CREATURE_DESCRIPTION: char = 'd';
 const DUPLICATE_CREATURE_KEY: char = 'x';
 
 #[derive(PartialEq)]
@@ -60,7 +61,9 @@ pub struct App {
     should_exit: bool,
     show_creature_search_popup: bool,
     show_initiative_popup: bool,
+    show_description_popup: bool,
     initiative_input: Input,
+    description_input: Input,
     creature_search_input: String,
     creature_search_result: Vec<ApiCreatureSearchItem>,
     creature_search_selected: Option<usize>,
@@ -80,7 +83,9 @@ impl Default for App {
             show_creature_search_popup: false,
             creature_list: CreatureList::default(),
             show_initiative_popup: false,
+            show_description_popup: false,
             initiative_input: Input::default(),
+            description_input: Input::default(),
             creature_search_input: String::default(),
             creature_search_result: Vec::new(),
             creature_search_selected: None,
@@ -146,6 +151,11 @@ impl App {
             return;
         }
 
+        if self.show_description_popup {
+            self.handle_description_input(&key);
+            return;
+        }
+
         self.handle_general_input(&key);
     }
 
@@ -169,6 +179,11 @@ impl App {
             KeyCode::Char(SET_INITIATIVE_KEY) => {
                 if self.creature_list.state.selected().is_some() {
                     self.show_initiative_popup = true;
+                }
+            }
+            KeyCode::Char(SET_CREATURE_DESCRIPTION) => {
+                if self.creature_list.state.selected().is_some() {
+                    self.show_description_popup = true;
                 }
             }
             KeyCode::Char(DUPLICATE_CREATURE_KEY) => self.duplicate_creature(),
@@ -212,6 +227,26 @@ impl App {
             }
             _ => {
                 self.initiative_input.handle_event(&Event::Key(*key));
+            }
+        }
+    }
+
+    fn handle_description_input(&mut self, key: &KeyEvent) {
+        match key.code {
+            KeyCode::Enter => {
+                if let Some(i) = self.creature_list.state.selected() {
+                    let new_description = self.description_input.value().to_string();
+                    self.creature_list.items[i].desc = Some(new_description);
+                }
+                self.show_description_popup = false;
+                self.description_input = Input::default();
+            }
+            KeyCode::Char(QUIT_APP_KEY) | KeyCode::Esc => {
+                self.show_description_popup = false;
+                self.description_input = Input::default();
+            }
+            _ => {
+                self.description_input.handle_event(&Event::Key(*key));
             }
         }
     }
@@ -428,6 +463,12 @@ impl Widget for &mut App {
             App::clear_area(area, buf);
             App::render_initiative_popup(&self, area, buf);
         }
+
+        if self.show_description_popup {
+            let area = App::popup_description_area(area);
+            App::clear_area(area, buf);
+            App::render_description_popup(&self, area, buf);
+        }
     }
 }
 
@@ -444,6 +485,21 @@ impl App {
             .bg(NORMAL_ROW_BG);
 
         let input = Paragraph::new(self.initiative_input.value())
+            .block(block)
+            .fg(TEXT_FG_COLOR)
+            .wrap(Wrap { trim: false })
+            .alignment(ratatui::layout::Alignment::Center);
+
+        input.render(area, buf);
+    }
+
+    fn render_description_popup(&self, area: Rect, buf: &mut Buffer) {
+        let block = Block::bordered()
+            .title("Set Description")
+            .borders(Borders::ALL)
+            .bg(NORMAL_ROW_BG);
+
+        let input = Paragraph::new(self.description_input.value().to_string())
             .block(block)
             .fg(TEXT_FG_COLOR)
             .wrap(Wrap { trim: false })
@@ -507,6 +563,14 @@ impl App {
     }
 
     fn popup_initiative_area(area: Rect) -> Rect {
+        let vertical = Layout::vertical([Constraint::Percentage(30)]).flex(Flex::Center);
+        let horizontal = Layout::horizontal([Constraint::Percentage(40)]).flex(Flex::Center);
+        let [area] = vertical.areas(area);
+        let [area] = horizontal.areas(area);
+        area
+    }
+
+    fn popup_description_area(area: Rect) -> Rect {
         let vertical = Layout::vertical([Constraint::Percentage(30)]).flex(Flex::Center);
         let horizontal = Layout::horizontal([Constraint::Percentage(40)]).flex(Flex::Center);
         let [area] = vertical.areas(area);
@@ -583,7 +647,7 @@ impl App {
                         .join("\n")
                 }
                 Faction::Player => format!(
-                    " Initiative: {}\n Name: {}\n HP: {}\n Description: {}",
+                    " Initiative: {}\n Name: {}\n HP: {}",
                     if initiative_is_set {
                         self.creature_list.items[i].initiative.unwrap().to_string()
                     } else {
@@ -591,10 +655,6 @@ impl App {
                     },
                     self.creature_list.items[i].name,
                     self.creature_list.items[i].hit_points.to_string(),
-                    match &self.creature_list.items[i].desc {
-                        Some(desc) => desc.to_string(),
-                        None => "".to_string(),
-                    },
                 ),
             }
         } else {
