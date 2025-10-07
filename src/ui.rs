@@ -40,6 +40,8 @@ const QUIT_APP_KEY: char = 'q';
 const UNSELECT_ALL_KEY: char = 'u';
 const MOVE_DOWN_KEY: char = 'j';
 const MOVE_UP_KEY: char = 'k';
+const PEEK_DOWN_KEY: char = 'J';
+const PEEK_UP_KEY: char = 'K';
 const LOWER_HEALTH_KEY: char = 'h';
 const INCREASE_HEALTH_KEY: char = 'l';
 const SEARCH_FOR_NEW_CREATURE_KEY: char = 's';
@@ -68,6 +70,8 @@ pub struct App {
     increasing_or_decreasing_health: bool,
     health_change: i64,
     creature_info_scroll: u16,
+
+    save_creature_viewing: Option<usize>,
 }
 
 impl Default for App {
@@ -86,6 +90,7 @@ impl Default for App {
             increasing_or_decreasing_health: false,
             health_change: 0,
             creature_info_scroll: 0,
+            save_creature_viewing: None,
         }
     }
 }
@@ -150,7 +155,9 @@ impl App {
             KeyCode::Char(QUIT_APP_KEY) | KeyCode::Esc => self.should_exit = true,
             KeyCode::Char(UNSELECT_ALL_KEY) => self.select_none(),
             KeyCode::Char(MOVE_DOWN_KEY) | KeyCode::Down => self.select_next(),
+            KeyCode::Char(PEEK_DOWN_KEY) => self.peek_on_next(),
             KeyCode::Char(MOVE_UP_KEY) | KeyCode::Up => self.select_previous(),
+            KeyCode::Char(PEEK_UP_KEY) => self.peek_on_previous(),
             KeyCode::Char(LOWER_HEALTH_KEY) | KeyCode::Left => self.lower_health(),
             KeyCode::Char(INCREASE_HEALTH_KEY) | KeyCode::Right => self.increase_health(),
             KeyCode::Char(SEARCH_FOR_NEW_CREATURE_KEY) => {
@@ -279,10 +286,28 @@ impl App {
     }
 
     fn select_next(&mut self) {
+        if self.save_creature_viewing.is_some() {
+            self.creature_list
+                .state
+                .select(self.save_creature_viewing.take());
+            self.save_creature_viewing = None;
+            return;
+        }
         self.health_change = 0;
         self.increasing_or_decreasing_health = false;
-        let creature_count: usize = self.creature_list.items.len();
 
+        self.move_down_selected_creature();
+    }
+
+    fn peek_on_next(&mut self) {
+        if self.save_creature_viewing.is_none() {
+            self.save_creature_viewing = self.creature_list.state.selected();
+        }
+        self.move_down_selected_creature();
+    }
+
+    fn move_down_selected_creature(&mut self) {
+        let creature_count: usize = self.creature_list.items.len();
         match self.creature_list.state.selected() {
             Some(i) => {
                 if i + 1 < creature_count {
@@ -304,6 +329,18 @@ impl App {
     fn select_previous(&mut self) {
         self.health_change = 0;
         self.increasing_or_decreasing_health = false;
+
+        self.move_up_selected_creature();
+    }
+
+    fn peek_on_previous(&mut self) {
+        if self.save_creature_viewing.is_none() {
+            self.save_creature_viewing = self.creature_list.state.selected();
+        }
+        self.move_up_selected_creature();
+    }
+
+    fn move_up_selected_creature(&mut self) {
         let creature_count: usize = self.creature_list.items.len();
 
         match self.creature_list.state.selected() {
