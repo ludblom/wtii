@@ -16,10 +16,10 @@ pub enum ApiError {
 impl fmt::Display for ApiError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ApiError::Request(e) => write!(f, "Unable to make API request: {}", e),
-            ApiError::ResponseText(e) => write!(f, "Unable to parse string: {}", e),
-            ApiError::Parse(e) => write!(f, "Unable to parse response: {}", e),
-            ApiError::Unexpected(e) => write!(f, "Unexpected error: {}", e),
+            ApiError::Request(e) => write!(f, "Unable to make API request: {e}"),
+            ApiError::ResponseText(e) => write!(f, "Unable to parse string: {e}"),
+            ApiError::Parse(e) => write!(f, "Unable to parse response: {e}"),
+            ApiError::Unexpected(e) => write!(f, "Unexpected error: {e}"),
         }
     }
 }
@@ -51,7 +51,7 @@ impl ApiCall for MonsterSearch {
     async fn monster_search(&self, name: &str) -> Result<Response, ReqwestError> {
         let client = Client::new();
         client
-            .get(format!("{}/monsters/?search={}", API_BASE_URL, name))
+            .get(format!("{API_BASE_URL}/monsters/?search={name}"))
             .send()
             .await
     }

@@ -56,6 +56,7 @@ enum TextFormatting {
     NewLine,
 }
 
+#[derive(Default)]
 pub struct App {
     creature_list: CreatureList,
     should_exit: bool,
@@ -74,29 +75,6 @@ pub struct App {
     health_change: i64,
     creature_info_scroll: u16,
     save_creature_viewing: Option<usize>,
-}
-
-impl Default for App {
-    fn default() -> Self {
-        Self {
-            should_exit: false,
-            show_creature_search_popup: false,
-            creature_list: CreatureList::default(),
-            show_initiative_popup: false,
-            show_description_popup: false,
-            initiative_input: Input::default(),
-            description_input: Input::default(),
-            creature_search_input: String::default(),
-            creature_search_result: Vec::new(),
-            creature_search_selected: None,
-            creature_search_loading: false,
-            creature_search_result_rx: None,
-            increasing_or_decreasing_health: false,
-            health_change: 0,
-            creature_info_scroll: 0,
-            save_creature_viewing: None,
-        }
-    }
 }
 
 impl App {
@@ -455,19 +433,19 @@ impl Widget for &mut App {
         if self.show_creature_search_popup {
             let area = App::popup_search_area(main_area);
             App::clear_area(area, buf);
-            App::render_creature_search_popup(&self, area, buf);
+            App::render_creature_search_popup(self, area, buf);
         }
 
         if self.show_initiative_popup {
             let area = App::popup_initiative_area(area);
             App::clear_area(area, buf);
-            App::render_initiative_popup(&self, area, buf);
+            App::render_initiative_popup(self, area, buf);
         }
 
         if self.show_description_popup {
             let area = App::popup_description_area(area);
             App::clear_area(area, buf);
-            App::render_description_popup(&self, area, buf);
+            App::render_description_popup(self, area, buf);
         }
     }
 }
@@ -587,14 +565,10 @@ impl App {
 
     fn render_footer(area: Rect, buf: &mut Buffer) {
         Paragraph::new(format!(
-            "Use {} for new encounter, {} to set initiative, {} and {} to change \
-                health, {} and {} to switch between creatures.",
-            NEW_ENCOUNTER_KEY,
-            SET_INITIATIVE_KEY,
-            LOWER_HEALTH_KEY,
-            INCREASE_HEALTH_KEY,
-            MOVE_DOWN_KEY,
-            MOVE_UP_KEY
+            "Use {NEW_ENCOUNTER_KEY} for new encounter, \
+            {SET_INITIATIVE_KEY} to set initiative, \
+            {LOWER_HEALTH_KEY} and {INCREASE_HEALTH_KEY} to change health, \
+            {MOVE_DOWN_KEY} and {MOVE_UP_KEY} to switch between creatures."
         ))
         .centered()
         .render(area, buf);
@@ -638,9 +612,9 @@ impl App {
                         .into_iter()
                         .map(|(k, v, f)| {
                             if f == TextFormatting::Line {
-                                format!("{}: {}", k, v)
+                                format!("{k}: {v}")
                             } else {
-                                format!("\n==={}===\n{}", k, v)
+                                format!("\n==={k}===\n{v}")
                             }
                         })
                         .collect::<Vec<_>>()
@@ -654,7 +628,7 @@ impl App {
                         "Not set yet".to_string()
                     },
                     self.creature_list.items[i].name,
-                    self.creature_list.items[i].hit_points.to_string(),
+                    self.creature_list.items[i].hit_points,
                 ),
             }
         } else {
@@ -782,7 +756,7 @@ fn npc_info(app: &App, i: usize) -> Vec<(String, String, TextFormatting)> {
     if let Some(speed) = &c.speed {
         lines.push((
             "Speed".to_string(),
-            format!("{}", speed),
+            format!("{speed}"),
             TextFormatting::NewLine,
         ));
     }

@@ -42,16 +42,16 @@ impl fmt::Display for Speed {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut parts = Vec::new();
         if let Some(val) = self.walk {
-            parts.push(format!("Walk: {}", val));
+            parts.push(format!("Walk: {val}"));
         }
         if let Some(val) = self.fly {
-            parts.push(format!("Fly: {}", val));
+            parts.push(format!("Fly: {val}"));
         }
         if let Some(val) = self.swim {
-            parts.push(format!("Swim: {}", val));
+            parts.push(format!("Swim: {val}"));
         }
         if let Some(val) = self.burrow {
-            parts.push(format!("Burrow: {}", val));
+            parts.push(format!("Burrow: {val}"));
         }
         write!(f, "{}", parts.join(", "))
     }
@@ -68,13 +68,13 @@ impl fmt::Display for Skills {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut parts = Vec::new();
         if let Some(val) = self.athletics {
-            parts.push(format!("Athletics: {}", val));
+            parts.push(format!("Athletics: {val}"));
         }
         if let Some(val) = self.perception {
-            parts.push(format!("Perception: {}", val));
+            parts.push(format!("Perception: {val}"));
         }
         if let Some(val) = self.stealth {
-            parts.push(format!("Stealth: {}", val));
+            parts.push(format!("Stealth: {val}"));
         }
         write!(f, "{}", parts.join(", "))
     }
@@ -93,10 +93,10 @@ impl fmt::Display for Action {
         let mut parts = Vec::new();
         parts.push(format!("{}: {}", self.name, self.desc));
         if let Some(val) = self.attack_bonus {
-            parts.push(format!("(Attack Bonus: {})", val));
+            parts.push(format!("(Attack Bonus: {val})"));
         }
         if let Some(val) = self.damage_dice.clone() {
-            parts.push(format!("(Damage Dice: {})", val));
+            parts.push(format!("(Damage Dice: {val})"));
         }
         write!(f, "{}", parts.join(", "))
     }
@@ -232,11 +232,7 @@ impl CreatureItem {
             hit_dice: None,
             armor_class: None,
             armor_desc: None,
-            desc: if desc.is_none() {
-                None
-            } else {
-                Some(desc.unwrap().to_string())
-            },
+            desc: desc.map(|d| d.to_string()),
             speed: None,
             size: None,
             strength: None,
@@ -329,7 +325,7 @@ impl CreatureList {
                 (None, None) => std::cmp::Ordering::Equal,
                 (None, _) => std::cmp::Ordering::Less,
                 (_, None) => std::cmp::Ordering::Greater,
-                (Some(creature_a_val), Some(creature_b_val)) => creature_b_val.cmp(&creature_a_val),
+                (Some(creature_a_val), Some(creature_b_val)) => creature_b_val.cmp(creature_a_val),
             }
         })
     }
@@ -389,7 +385,7 @@ fn get_config_file_location() -> Option<String> {
         Ok(home) => home,
         Err(_) => return None,
     };
-    Some(format!("{}/.config/wtii/default.yml", home))
+    Some(format!("{home}/.config/wtii/default.yml"))
 }
 
 #[cfg(windows)]
