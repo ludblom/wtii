@@ -1,6 +1,7 @@
 use crate::api::{search_for_creature, ApiError, MonsterSearch};
 use crate::creature::{ApiCreatureSearchItem, Faction};
 use crate::creature::{CreatureItem, CreatureList, Status};
+use crate::keybindings::*;
 use color_eyre::Result;
 use ratatui::layout::Direction;
 use ratatui::text::Text;
@@ -32,23 +33,6 @@ const NORMAL_ROW_BG: Color = SLATE.c950;
 const ALT_ROW_BG_COLOR: Color = SLATE.c900;
 const SELECTED_STYLE: Style = Style::new().bg(SLATE.c800).add_modifier(Modifier::BOLD);
 const TEXT_FG_COLOR: Color = SLATE.c200;
-
-// Keybindings
-const NEW_ENCOUNTER_KEY: char = 'e';
-const SET_INITIATIVE_KEY: char = 'i';
-const QUIT_APP_KEY: char = 'q';
-const UNSELECT_ALL_KEY: char = 'u';
-const MOVE_DOWN_KEY: char = 'j';
-const MOVE_UP_KEY: char = 'k';
-const PEEK_DOWN_KEY: char = 'J';
-const PEEK_UP_KEY: char = 'K';
-const LOWER_HEALTH_KEY: char = 'h';
-const INCREASE_HEALTH_KEY: char = 'l';
-const SEARCH_FOR_NEW_CREATURE_KEY: char = 's';
-const INSERT_NEW_PLAYER_KEY: char = 'c';
-const DELETE_CREATURE_KEY: char = 'D';
-const SET_CREATURE_DESCRIPTION: char = 'd';
-const DUPLICATE_CREATURE_KEY: char = 'x';
 
 #[derive(PartialEq)]
 enum TextFormatting {
@@ -138,33 +122,44 @@ impl App {
     }
 
     fn handle_general_input(&mut self, key: &KeyEvent) {
+        let keymap: KeyBindings = KeyBindings::default();
         match key.code {
-            KeyCode::Char(QUIT_APP_KEY) | KeyCode::Esc => self.should_exit = true,
-            KeyCode::Char(UNSELECT_ALL_KEY) => self.select_none(),
-            KeyCode::Char(MOVE_DOWN_KEY) => self.select_next(),
-            KeyCode::Char(PEEK_DOWN_KEY) => self.peek_on_next(),
-            KeyCode::Char(MOVE_UP_KEY) => self.select_previous(),
-            KeyCode::Char(PEEK_UP_KEY) => self.peek_on_previous(),
-            KeyCode::Char(LOWER_HEALTH_KEY) | KeyCode::Left => self.lower_health(),
-            KeyCode::Char(INCREASE_HEALTH_KEY) | KeyCode::Right => self.increase_health(),
-            KeyCode::Char(SEARCH_FOR_NEW_CREATURE_KEY) => {
+            // Quit app
+            KeyCode::Char(c) if c == keymap.quit_app => self.should_exit = true,
+            KeyCode::Esc => self.should_exit = true,
+
+            KeyCode::Char(c) if c == keymap.unselect_all => self.select_none(),
+            KeyCode::Char(c) if c == keymap.move_down => self.select_next(),
+            KeyCode::Char(c) if c == keymap.peek_down => self.peek_on_next(),
+            KeyCode::Char(c) if c == keymap.move_up => self.select_previous(),
+            KeyCode::Char(c) if c == keymap.peek_up => self.peek_on_previous(),
+
+            // Lower and increase health
+            KeyCode::Char(c) if c == keymap.lower_health => self.lower_health(),
+            KeyCode::Char(c) if c == keymap.increase_health => self.increase_health(),
+            KeyCode::Left => self.lower_health(),
+            KeyCode::Right => self.increase_health(),
+
+            KeyCode::Char(c) if c == keymap.search_for_new_creature => {
                 self.creature_search_selected = None;
                 self.show_creature_search_popup = true;
             }
-            KeyCode::Char(INSERT_NEW_PLAYER_KEY) => self.insert_new(),
-            KeyCode::Char(DELETE_CREATURE_KEY) => self.delete_creature(),
-            KeyCode::Char(NEW_ENCOUNTER_KEY) => self.new_encounter(),
-            KeyCode::Char(SET_INITIATIVE_KEY) => {
+            KeyCode::Char(c) if c == keymap.insert_new_player => self.insert_new(),
+            KeyCode::Char(c) if c == keymap.delete_creature => self.delete_creature(),
+            KeyCode::Char(c) if c == keymap.new_encounter => self.new_encounter(),
+            KeyCode::Char(c) if c == keymap.new_encounter => {
                 if self.creature_list.state.selected().is_some() {
                     self.show_initiative_popup = true;
                 }
             }
-            KeyCode::Char(SET_CREATURE_DESCRIPTION) => {
+            KeyCode::Char(c) if c == keymap.set_creature_description => {
                 if self.creature_list.state.selected().is_some() {
                     self.show_description_popup = true;
                 }
             }
-            KeyCode::Char(DUPLICATE_CREATURE_KEY) => self.duplicate_creature(),
+            KeyCode::Char(c) if c == keymap.duplicate_creature => self.duplicate_creature(),
+
+            // Scroll creature info
             KeyCode::Down => self.creature_info_scroll += 1,
             KeyCode::Up => {
                 if self.creature_info_scroll > 0 {
@@ -199,7 +194,7 @@ impl App {
                 self.show_initiative_popup = false;
                 self.initiative_input = Input::default();
             }
-            KeyCode::Char(QUIT_APP_KEY) | KeyCode::Esc => {
+            KeyCode::Esc => {
                 self.show_initiative_popup = false;
                 self.initiative_input = Input::default();
             }
@@ -219,7 +214,7 @@ impl App {
                 self.show_description_popup = false;
                 self.description_input = Input::default();
             }
-            KeyCode::Char(QUIT_APP_KEY) | KeyCode::Esc => {
+            KeyCode::Esc => {
                 self.show_description_popup = false;
                 self.description_input = Input::default();
             }
@@ -230,6 +225,7 @@ impl App {
     }
 
     async fn handle_creature_search_input(&mut self, key: &KeyEvent) {
+        let keymap: KeyBindings = KeyBindings::default();
         match key.code {
             KeyCode::Tab => {
                 if !self.creature_search_result.is_empty() {
@@ -269,13 +265,13 @@ impl App {
                 });
             }
             KeyCode::Char(c) => {
-                if c == MOVE_DOWN_KEY && self.creature_search_selected.is_some() {
+                if c == keymap.move_down && self.creature_search_selected.is_some() {
                     if let Some(selected) = self.creature_search_selected {
                         if selected + 1 < self.creature_search_result.len() {
                             self.creature_search_selected = Some(selected + 1);
                         }
                     }
-                } else if c == MOVE_UP_KEY && self.creature_search_selected.is_some() {
+                } else if c == keymap.move_up && self.creature_search_selected.is_some() {
                     if let Some(selected) = self.creature_search_selected {
                         if selected > 0 {
                             self.creature_search_selected = Some(selected - 1);
@@ -564,11 +560,18 @@ impl App {
     }
 
     fn render_footer(area: Rect, buf: &mut Buffer) {
+        let keymap: KeyBindings = KeyBindings::default();
         Paragraph::new(format!(
-            "Use {NEW_ENCOUNTER_KEY} for new encounter, \
-            {SET_INITIATIVE_KEY} to set initiative, \
-            {LOWER_HEALTH_KEY} and {INCREASE_HEALTH_KEY} to change health, \
-            {MOVE_DOWN_KEY} and {MOVE_UP_KEY} to switch between creatures."
+            "Use {} for new encounter, \
+            {} to set initiative, \
+            {} and {} to change health, \
+            {} and {} to switch between creatures.",
+            keymap.new_encounter,
+            keymap.set_initiative,
+            keymap.lower_health,
+            keymap.increase_health,
+            keymap.move_down,
+            keymap.move_up,
         ))
         .centered()
         .render(area, buf);
