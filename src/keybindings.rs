@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 #[derive(Debug, Clone)]
 pub struct KeyBindings {
     pub new_encounter: char,
@@ -19,7 +21,7 @@ pub struct KeyBindings {
 
 impl Default for KeyBindings {
     fn default() -> Self {
-        Self {
+        let default = Self {
             new_encounter: 'e',
             set_initiative: 'i',
             quit_app: 'q',
@@ -35,6 +37,14 @@ impl Default for KeyBindings {
             delete_creature: 'D',
             set_creature_description: 'd',
             duplicate_creature: 'x',
-        }
+        };
     }
+}
+
+#[cfg(unix)]
+fn get_keymap_config_location() -> Option<PathBuf> {
+    let home = std::env::var("HOME").ok()?;
+    Some(PathBuf::from(format!(
+        "{home}/.config/wtii/keybindings.yml"
+    )))
 }
